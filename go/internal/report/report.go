@@ -57,21 +57,22 @@ func Annotation(check, message string, locate bool) string {
 	if locate {
 		properties = location(message)
 	}
-	return "::error" + properties + "::" + escapeData(check+": "+message)
+	return "::error" + properties + "::" + EscapeData(check+": "+message)
 }
 
 // Notice returns a safely escaped info workflow command titled by the check.
 // It never marks the job failed.
 func Notice(check, message string) string {
-	return "::notice title=" + escapeProperty(check) + "::" + escapeData(message)
+	return "::notice title=" + escapeProperty(check) + "::" + EscapeData(message)
 }
 
-func escapeData(s string) string {
+// EscapeData keeps a workflow command's message on one line.
+func EscapeData(s string) string {
 	return strings.NewReplacer("%", "%25", "\r", "%0D", "\n", "%0A").Replace(s)
 }
 
 func escapeProperty(s string) string {
-	return strings.NewReplacer(":", "%3A", ",", "%2C").Replace(escapeData(s))
+	return strings.NewReplacer(":", "%3A", ",", "%2C").Replace(EscapeData(s))
 }
 
 // EscapeMarkdown keeps diagnostic text from injecting Markdown or HTML.

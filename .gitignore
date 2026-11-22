@@ -11,6 +11,8 @@ dist
 
 # Compiled Go binaries; rebuilt from go/ sources, never committed
 go/bin/
+# fitness-ci, which each workflow job builds once for its steps
+/bin/
 
 # macOS Finder view-state metadata; never part of the project
 .DS_Store

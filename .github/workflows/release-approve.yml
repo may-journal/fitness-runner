@@ -53,9 +53,9 @@ jobs:
         env:
           TOKEN: ${{ secrets.APPROVER_TOKEN }}
           KIND: ${{ inputs.kind }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: check-approver-token.sh
+          command: check-approver-token
       # Only the automation App's PR whose files are all release files
       # qualifies. A rename counts both its paths, so nothing moves in.
       - name: Check the release PR
@@ -66,9 +66,9 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
           AUTHOR: app/may-journal-automation
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: check-release-pr.sh
+          command: check-release-pr
       # A build(deps) PR qualifies when it changes only existing dev packages in
       # package.json and its lockfile. Every version that moves must keep its
       # major number.
@@ -79,9 +79,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: check-dependency-bump.sh
+          command: check-dependency-bump
       # Every check but this run's own, known by its run link, must pass. A
       # red or cancelled check, a new push, or checks still running after the
       # last try leave the PR for a person.
@@ -95,9 +95,9 @@ jobs:
           SHA: ${{ steps.guard.outputs.sha || steps.bump.outputs.sha }}
           TRIES: 19
           WAIT_SECONDS: 30
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: wait-for-green-checks.sh
+          command: wait-for-green-checks
       # The approval names the commit checked, so a later push needs a new
       # one. A PR the approver already approved at that commit is left alone.
       - name: Approve the PR
@@ -108,9 +108,9 @@ jobs:
           PR: ${{ inputs.pr }}
           SHA: ${{ steps.guard.outputs.sha || steps.bump.outputs.sha }}
           BOT: ${{ steps.secrets.outputs.login }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: approve-pr.sh
+          command: approve-pr
       - name: Report job outcome
         if: ${{ always() }}
         run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

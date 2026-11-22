@@ -29,31 +29,42 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Start with no failure reported
+      shell: bash
+      run: echo "FITNESS_FAILURE_REPORTED=false" >> "$GITHUB_ENV"
+    # The installer of the release the version or an exact action ref names,
+    # else of the newest release. It checks the bundle against the hashes it
+    # holds, and a major ref against its own version.
     - name: Download the compiled Go installer
       id: download
       shell: bash
-      working-directory: ${{ runner.temp }}
       env:
-        REQUESTED_VERSION: ${{ inputs.version }}
-        ACTION_REF: ${{ github.action_ref }}
+        GH_TOKEN: ${{ github.token }}
+        TAG: ${{ inputs.version != '' && inputs.version != 'latest' && (startsWith(inputs.version, 'v') && inputs.version || startsWith(inputs.version, '0.') && format('go/v{0}', inputs.version) || format('v{0}', inputs.version)) || inputs.version == '' && (startsWith(github.action_ref, 'v') || startsWith(github.action_ref, 'go/v')) && contains(github.action_ref, '.') && github.action_ref || '' }}
         PLATFORM: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
-      run: "${{ github.action_path }}/scripts/download-installer.sh"
+      run: gh release download $TAG --repo may-journal/fitness-runner --pattern "fitness-install-*-$PLATFORM" --output "$RUNNER_TEMP/fitness-install" --clobber
+    - name: Make the installer runnable
+      id: runnable
+      shell: bash
+      run: chmod +x "$RUNNER_TEMP/fitness-install"
     - id: install
       shell: bash
       env:
-        FITNESS_EXECUTABLE: ${{ steps.download.outputs.executable }}
+        FITNESS_ACTION_REF: ${{ github.action_ref }}
         FITNESS_VERSION: ${{ inputs.version }}
         FITNESS_CHECK: ${{ inputs.check }}
         FITNESS_POLICY: ${{ inputs.policy }}
         FITNESS_CHECKS: ${{ inputs.checks }}
         FITNESS_INSTALL_ONLY: ${{ inputs.install-only }}
         FITNESS_WITH_CHECKS: ${{ inputs.with-checks }}
-      run: '"$FITNESS_EXECUTABLE" --github-action'
-    # Shell builtins also work when a consumer deliberately excludes Go from PATH.
+      run: '"$RUNNER_TEMP/fitness-install" --github-action'
+    # fitness-ci comes with the bundle. When no bundle with it was installed,
+    # the failed step above already says why, and this report stays out.
     - name: Report action outcome
       if: ${{ always() }}
+      continue-on-error: true
       shell: bash
       env:
         REPORT_STATUS: ${{ steps.download.outcome == 'failure' && 'failure' || steps.install.outcome == 'failure' && 'failure' || steps.install.outcome }}
         REPORT_ALREADY_ANNOTATED: ${{ env.FITNESS_FAILURE_REPORTED == 'true' && steps.install.outcome == 'failure' }}
-      run: "${{ github.action_path }}/scripts/report-action-outcome.sh"
+      run: fitness-ci report-action-outcome

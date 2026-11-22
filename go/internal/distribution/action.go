@@ -3,6 +3,7 @@ package distribution
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -19,6 +20,8 @@ func ActionOptions(options Options) (Options, error) {
 func actionInputs(options Options, getenv func(string) string) (Options, error) {
 	if version := getenv("FITNESS_VERSION"); version != "" {
 		options.Version = version
+	} else if err := inMajor(options.Version, getenv("FITNESS_ACTION_REF")); err != nil {
+		return options, err
 	}
 	args, err := actionSelection(getenv)
 	if err != nil {
@@ -28,6 +31,18 @@ func actionInputs(options Options, getenv func(string) string) (Options, error) 
 		options.Args = args
 	}
 	return withModes(options, getenv)
+}
+
+// majorRef is an action ref that names a major version, such as v1.
+var majorRef = regexp.MustCompile(`^v[0-9]+$`)
+
+// inMajor fails when the action runs at a major ref, such as v1, and the
+// installer's newest release is outside it.
+func inMajor(version, ref string) error {
+	if majorRef.MatchString(ref) && !strings.HasPrefix(version, ref[1:]+".") {
+		return fmt.Errorf("the newest Fitness release %s is outside %s", version, ref)
+	}
+	return nil
 }
 
 // withModes reads the install-only and with-checks inputs into options.

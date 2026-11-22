@@ -2,7 +2,7 @@
 
 ## Why
 
-My repo's Actions run fitness on every change, keep issues honest, and merge ready pull requests without a hand click. Each workflow step that does real work calls a checked-in script, so a typo in one is caught before a run (0008.7).
+My repo's Actions run fitness on every change, keep issues honest, and merge ready pull requests without a hand click. Each step that does real work calls a typed `fitness-ci` subcommand from the bundle, so a typo fails before a run (0008.7).
 
 ## Measurement
 
@@ -41,7 +41,7 @@ events
 - 0007.7
   - Given Developer has a green release or dev dependency pull request
     - When Release approve runs
-      - Then it approves only one that changes nothing else
+      - Then it approves only one that changes nothing else, a file its base lacks reading as empty
 - 0007.8
   - Given Developer has a Dependabot pull request
     - When dependabot-pr runs

@@ -54,9 +54,9 @@ jobs:
       - name: Find the Go module file
         id: go-module
         if: ${{ inputs.ref != '' || hashFiles('**/go.mod') != '' }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: find-go-module.sh
+          command: find-go-module
       - uses: actions/setup-go@v5
         id: go
         if: ${{ steps.go-module.outcome == 'success' }}
@@ -95,9 +95,9 @@ jobs:
       - name: Find the JDK version file
         id: jdk
         if: ${{ hashFiles('.java-version', '.sdkmanrc', '.tool-versions') != '' }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: find-jdk-version-file.sh
+          command: find-jdk-version-file
       - name: Set up Java from the JDK version file
         if: ${{ steps.jdk.outputs.file != '' }}
         uses: actions/setup-java@v6
@@ -126,9 +126,9 @@ jobs:
       # zip must match its published SHA-256 and lands under a versioned name.
       - name: Install swiftlint
         if: ${{ (inputs.swift || hashFiles('**/*.swift') != '') }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: install-swiftlint.sh
+          command: install-swiftlint
         env:
           VERSION: ${{ inputs.swiftlint-version }}
           ASSET: ${{ runner.os == 'macOS' && 'portable_swiftlint' || (runner.arch == 'ARM64' && 'swiftlint_linux_arm64' || 'swiftlint_linux_amd64') }}

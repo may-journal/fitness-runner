@@ -65,9 +65,9 @@ jobs:
         if: ${{ steps.release.outputs.pr != '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: shape-release-notes.sh
+          command: shape-release-notes
       # pr-check needs every PR to close an issue, so the release PR closes
       # one tracking issue, found by title on each rewrite.
       - name: Link the release PR to its tracking issue
@@ -75,9 +75,9 @@ jobs:
         if: ${{ steps.release.outputs.pr != '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: link-release-tracking-issue.sh
+          command: link-release-tracking-issue
       # pr-check skips body edits, so it judged the body Release Please first
       # wrote. Reopening the PR after a rewrite lets the check read the shaped
       # body.
@@ -85,9 +85,9 @@ jobs:
         if: ${{ steps.release.outputs.pr != '' && (steps.shape.outputs.edited == 'true' || steps.link.outputs.edited == 'true') }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: reopen-pr.sh
+          command: reopen-pr
       # Only a missing tag is created; any other lookup error fails the step
       # by name instead of a confusing "Reference already exists".
       # Each released component moves its own major tag, v1 for the root and
@@ -98,9 +98,9 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           OUTPUTS: ${{ toJSON(steps.release.outputs) }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: move-major-tag.sh
+          command: move-major-tag
       - name: Report job outcome
         if: ${{ always() }}
         run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

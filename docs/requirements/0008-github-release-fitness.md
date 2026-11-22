@@ -2,7 +2,8 @@
 
 ## Why
 
-I release fitness from `version.txt` and checked archives, with notes that list each new entry and major tags that move.
+I release fitness and fitness-ci from `version.txt` and checked archives, with notes that list each new entry and major tags that move.
+
 ## Measurement
 
 releases whose tag, archives and notes match the repo
@@ -39,9 +40,9 @@ releases
       - Then each tag points at its own release, or nothing moves
 - 0008.7
   - Given Developer has the workflows and actions of this repo
-    - When each reference to a script is read
-      - Then every script it names exists and is executable
+    - When each step runs its fitness-ci subcommand the way its workflow does
+      - Then the subcommand exists and does the step's job
 - 0008.8
-  - Given Developer has a script that a reusable workflow runs through the script action
-    - When the script writes a step output
-      - Then the script action declares that output, so the caller reads it
+  - Given Developer has a subcommand that a reusable workflow runs through the fitness-ci action
+    - When the subcommand writes a step output
+      - Then the action declares that output, so the caller reads it

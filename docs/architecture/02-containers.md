@@ -9,7 +9,7 @@ C4Container
 
     System_Boundary(ship, "Shipped artifacts") {
         Container(cli, "3 Fitness binary", "Go", "go/cmd/fitness, go/cmd/fitness-check-local-branch")
-        Container(tools, "4 Install and release tools", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
+        Container(tools, "4 Install, release and CI tools", "Go", "go/cmd/fitness-install, go/cmd/fitness-release, go/cmd/fitness-ci")
     }
 
     System_Boundary(own, "Repo checks") {
@@ -64,7 +64,7 @@ Numbers on nodes and letters on arrows match the callout table. Each container n
 | 1   | Same actor as system context.                                                                    | All runs start at the fitness binary.                       |
 | 2   | Same agent actor as system context.                                                              | Agents never link checks — they invoke the CLI.             |
 | 3   | `fitness` — the runner and `local-branch`. It runs each installed fitness-checks program as its own process. | The engine ships alone; checks still cannot share state. |
-| 4   | The installer and the release tool.                                                              | Shipped beside the bundle; not part of any run.             |
+| 4   | The installer, the release tool, and `fitness-ci`, which runs the workflow steps.                | Shipped beside the bundle or built by CI; not part of any run. |
 | 5   | Optional `.fitnessrc.json` with per-check options, and the files checks lint, format, or scan.   | Every check runs on every tracked file; no path is ignored. |
 | 6   | Installed checks exec these, the way each language module finds them.                            | Peer tools resolved at runtime, never bundled.              |
 | 7   | The `issue-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.       | Descriptions held to the same bar as files.                 |

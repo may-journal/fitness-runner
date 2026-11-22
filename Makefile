@@ -11,7 +11,7 @@ unexport GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTOR
 # Extra args for `make run`, e.g. `make run ARGS="--help"`.
 ARGS ?=
 
-.PHONY: help build install test test-race cover vet fmt fmt-check lint check run tidy clean
+.PHONY: help build fitness-ci install test test-race cover vet fmt fmt-check lint check run tidy clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -19,6 +19,9 @@ help: ## Show this help
 
 build: ## Compile all cmd/ binaries into go/bin
 	cd $(GO_DIR) && mkdir -p bin && go build -o bin ./cmd/...
+
+fitness-ci: ## Build fitness-ci, which runs the workflow steps, into bin/
+	cd $(GO_DIR) && go build -o ../bin/fitness-ci ./cmd/fitness-ci
 
 install: ## Install all cmd/ binaries to GOBIN (on your PATH)
 	cd $(GO_DIR) && go install ./cmd/...
@@ -57,7 +60,7 @@ run: build ## Run the fitness suite on this repo, e.g. make run ARGS="cspell"
 tidy: ## Tidy go.mod / go.sum
 	cd $(GO_DIR) && go mod tidy
 
-clean: ## Remove compiled binaries (go/bin)
-	rm -rf $(GO_DIR)/bin
+clean: ## Remove compiled binaries (go/bin and bin)
+	rm -rf $(GO_DIR)/bin bin
 
 .DEFAULT_GOAL := help

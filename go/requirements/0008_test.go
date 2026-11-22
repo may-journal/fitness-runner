@@ -343,35 +343,147 @@ func Test0008_6(t *testing.T) {
 }
 
 func Test0008_7(t *testing.T) {
-	t.Parallel()
-	root, named := "../..", 0
-	for _, file := range yamlFiles(t, root) {
-		n, bad := missingScripts(t, root, file)
-		named += n
-		for _, ref := range bad {
-			t.Errorf("%s names %s, which is missing or not executable", file, ref)
+	refs := cases{{"every step's reference to a subcommand or script", func(t *testing.T) {
+		t.Parallel()
+		subs, named := subcommandOutputs(t), 0
+		for _, file := range yamlFiles(t, "../..") {
+			n, bad := badReferences(t, file, subs)
+			named += n
+			for _, ref := range bad {
+				t.Errorf("%s names %q, which fitness-ci lacks or which is missing or not executable", file, ref)
+			}
 		}
-	}
-	if named < 20 {
-		t.Errorf("want the test to read the repo's script references, found %d", named)
-	}
+		if named < 30 {
+			t.Errorf("want the test to read the repo's subcommand and script references, found %d", named)
+		}
+	}}}
+	append(append(refs, ciStepCases()...), releaseStepCases()...).run(t)
 }
 
 func Test0008_8(t *testing.T) {
 	t.Parallel()
-	action, err := os.ReadFile("../../.github/actions/script/action.yml")
+	action, err := os.ReadFile("../../.github/actions/fitness-ci/action.yml")
 	mustDo(t, err)
+	subs, checked := subcommandOutputs(t), 0
 	for _, file := range yamlFiles(t, "../..") {
-		text, err := os.ReadFile(file)
-		mustDo(t, err)
-		for _, m := range scriptInput.FindAllStringSubmatch(string(text), -1) {
-			script, err := os.ReadFile(filepath.Join("..", "..", "scripts", m[1]))
+		checked += undeclaredOutputs(t, file, string(action), subs)
+	}
+	if checked < 8 {
+		t.Errorf("want the test to check the outputs of the action's subcommands, checked %d", checked)
+	}
+}
+
+// releaseStepCases run each subcommand a release or distribution step calls,
+// the way the step calls it, for 0008.7.
+func releaseStepCases() cases {
+	return cases{
+		{"the release workflow's verify step", func(t *testing.T) {
+			t.Parallel()
+			repo, job := releaseToolRepo(t, nil), t.TempDir()
+			output := filepath.Join(job, "output")
+			out, code := releaseToolRun(t, repo, append(releaseToolActions(job, "v1.0.1"), "GITHUB_OUTPUT="+output), "verify-tag")
+			sees(t, out, code, 0)
+			written, err := os.ReadFile(output)
 			mustDo(t, err)
-			for _, key := range outputKeys(string(script)) {
-				if !strings.Contains(string(action), "  "+key+":\n    description") {
-					t.Errorf("%s writes the output %s, which the script action does not declare", m[1], key)
+			if string(written) != "version=1.0.1\n" {
+				t.Errorf("verify-tag must write the version for later jobs, wrote %q", written)
+			}
+		}},
+		{"a bundle build on a branch", func(t *testing.T) {
+			t.Parallel()
+			run := runFitnessCI(t, ciStep{file: "distribution.yml", command: "build-release-bundle", env: []string{"SNAPSHOT=true"},
+				saved: map[string][]response{
+					"go":         {{Match: []string{"fitness-release version"}, Stdout: "1.2.3\n"}, {Match: []string{"fitness-release bundle-hashes"}, Stdout: "hashes\n"}, {Match: []string{"assemble"}}},
+					"goreleaser": {{Match: []string{"release"}}},
+				}})
+			sees(t, run.out, run.code, 0)
+			hasAll(t, "goreleaser calls", strings.Join(run.rp.calls("goreleaser"), "\n"),
+				"release --clean --skip=publish --snapshot --config .goreleaser-bundles.yml",
+				"release --clean --skip=publish --snapshot --config .goreleaser-tools.yml")
+			hasAll(t, "go calls", strings.Join(run.rp.calls("go"), "\n"), "-C go run ./cmd/fitness-release assemble --root ..")
+		}},
+		{"a release still a draft, and an answer that is neither", func(t *testing.T) {
+			t.Parallel()
+			view := func(answer string) map[string][]response {
+				return map[string][]response{"gh": {{Match: []string{"release view v1.2.3 --json isDraft"}, Stdout: answer + "\n"}}}
+			}
+			run := runFitnessCI(t, ciStep{file: "release.yml", command: "inspect-publication", env: []string{"RELEASE_TAG=v1.2.3"}, saved: view("true")})
+			sees(t, run.out, run.code, 0)
+			if run.outputs != "draft=true\n" {
+				t.Errorf("want draft=true written, got %q", run.outputs)
+			}
+			run = runFitnessCI(t, ciStep{file: "release.yml", command: "inspect-publication", env: []string{"RELEASE_TAG=v1.2.3"}, saved: view("maybe")})
+			sees(t, run.out, run.code, 1, "maybe")
+		}},
+		{"a downloaded release tool that lost its run bits", func(t *testing.T) {
+			t.Parallel()
+			for command, want := range map[string]string{"write-release-notes": "release-notes", "promote-release": "promote"} {
+				dir := t.TempDir()
+				writeTools(t, dir, map[string]string{"out/fitness-release-linux-amd64": tool("fitness-release")})
+				run := runFitnessCI(t, ciStep{file: "release.yml", command: command, dir: dir})
+				sees(t, run.out, run.code, 0, "fitness-release "+want)
+			}
+		}},
+		{"a release commit the Go module tag names, then another", func(t *testing.T) {
+			t.Parallel()
+			repo, origin := taggedRepo(t, "v1.2.3")
+			step := ciStep{file: "release.yml", command: "publish-go-module-tag", env: []string{"RELEASE_TAG=v1.2.3"}, dir: repo}
+			run := runFitnessCI(t, step)
+			sees(t, run.out, run.code, 0)
+			if got := tagCommit(origin, "go/v1.2.3"); got == "" || got != tagCommit(repo, "v1.2.3") {
+				t.Fatalf("origin must hold go/v1.2.3 at the release commit, got %q", got)
+			}
+			commit(t, repo, map[string]string{"CHANGELOG.md": "# Changelog\n"}, "docs(changelog): add changelog")
+			git(t, repo, "tag", "-f", "v1.2.3")
+			run = runFitnessCI(t, step)
+			sees(t, run.out, run.code, 1, "::error::Tag go/v1.2.3 names")
+		}},
+		{"the newest release, and an older one", func(t *testing.T) {
+			t.Parallel()
+			for latest, moves := range map[string]bool{"v1.2.3": true, "v1.3.0": false} {
+				repo, origin := taggedRepo(t, "v1.2.3")
+				run := runFitnessCI(t, ciStep{file: "release.yml", command: "move-engine-major-tag", env: []string{"RELEASE_TAG=v1.2.3"}, dir: repo,
+					saved: map[string][]response{"gh": {{Match: []string{"release view --json tagName"}, Stdout: latest + "\n"}}}})
+				sees(t, run.out, run.code, 0)
+				if moved := tagCommit(origin, "v1") == tagCommit(repo, "v1.2.3"); moved != moves {
+					t.Errorf("with %s newest, v1 moved = %v, want %v", latest, moved, moves)
 				}
 			}
-		}
+		}},
+		{"a downloaded verifier that lost its run bits", func(t *testing.T) {
+			t.Parallel()
+			for file, command := range map[string]string{"distribution.yml": "run-verifier smoke", "release.yml": "run-verifier verify-download"} {
+				dir := t.TempDir()
+				writeTools(t, dir, map[string]string{"out/fitness-release-linux-amd64": tool("verifier")})
+				run := runFitnessCI(t, ciStep{file: file, command: command, dir: dir, env: []string{"VERIFIER=out/fitness-release-linux-amd64"}})
+				sees(t, run.out, run.code, 0, "verifier "+strings.Fields(command)[1])
+			}
+		}},
+		{"a smoke job recording binary sizes", func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			writeTools(t, dir, map[string]string{"out/fitness-release-linux-amd64": "#!/bin/sh\necho '{\"size\":1}'\n"})
+			run := runFitnessCI(t, ciStep{file: "distribution.yml", command: "record-binary-sizes", dir: dir,
+				env: []string{"VERIFIER=out/fitness-release-linux-amd64", "PLATFORM=linux-amd64"}})
+			sees(t, run.out, run.code, 0)
+			record, err := os.ReadFile(filepath.Join(run.temp, "fitness-performance", "release-linux-amd64.json"))
+			if err != nil || string(record) != "{\"size\":1}\n" {
+				t.Errorf("the record must land in the performance folder, got %q (%v)", record, err)
+			}
+		}},
+		{"a candidate installer that lost its run bits", func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			writeTools(t, dir, map[string]string{
+				"out/fitness-install-1.2.3-linux-amd64": tool("installer"),
+				"tests/requirements-shard.sh":           "echo \"shard $1 of $2 with $FITNESS_INSTALL\"\n",
+			})
+			run := runFitnessCI(t, ciStep{file: "distribution.yml", command: "run-smoke-suite", dir: dir, env: []string{"PLATFORM=linux-amd64"}})
+			sees(t, run.out, run.code, 0, "installer --with-checks -- --policy=external")
+			run = runFitnessCI(t, ciStep{file: "distribution.yml", command: "run-requirement-shard", dir: dir, env: []string{"PLATFORM=linux-amd64", "SHARD=2"}})
+			real, err := filepath.EvalSymlinks(dir)
+			mustDo(t, err)
+			sees(t, run.out, run.code, 0, "shard 2 of 2 with "+filepath.Join(real, "out", "fitness-install-1.2.3-linux-amd64"))
+		}},
 	}
 }

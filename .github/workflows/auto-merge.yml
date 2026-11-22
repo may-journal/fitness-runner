@@ -43,9 +43,9 @@ jobs:
       # refusal fails with GitHub's answer.
       - name: Enable squash auto-merge
         id: merge
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: auto-merge.sh
+          command: auto-merge
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           BOT: ${{ steps.app-token.outputs.app-slug }}[bot]

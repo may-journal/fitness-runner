@@ -14,7 +14,7 @@ func FindingAnnotation(check string, f checkkit.Finding) string {
 	if f.File == "" {
 		return Annotation(check, f.Message, true)
 	}
-	return "::error " + findingProperties(check, f) + "::" + escapeData(findingText(f))
+	return "::error " + findingProperties(check, f) + "::" + EscapeData(findingText(f))
 }
 
 // findingProperties are the file, line, column and title of a finding's

@@ -30,11 +30,12 @@ runs:
     # command still runs after an earlier one fails, so one run lists both.
     - name: Run the commands
       id: run
-      shell: bash
+      uses: $/.github/actions/fitness-ci
       env:
         GH_TOKEN: ${{ inputs.token }}
         FITNESS_COMMANDS: ${{ inputs.command }}
-      run: "${{ github.action_path }}/run-commands.sh"
+      with:
+        command: run-commands
     # A failed command still fetched its checks, so they save either way.
     - name: Save the fetched checks
       if: ${{ always() && github.event_name != 'workflow_dispatch' }}
