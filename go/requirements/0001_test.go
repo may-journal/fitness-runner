@@ -106,6 +106,7 @@ func Test0001_2(t *testing.T) {
 			cases := map[string][]string{
 				`parsing "maybe": invalid syntax`:         {"FITNESS_INSTALL_ONLY=maybe"},
 				"choose action check or checks, not both": {"FITNESS_CHECK=gofmt", "FITNESS_CHECKS=gofmt,go-vet"},
+				"is outside v99":                          {"FITNESS_VERSION=", "FITNESS_ACTION_REF=v99"},
 			}
 			for want, inputs := range cases {
 				dir := t.TempDir()

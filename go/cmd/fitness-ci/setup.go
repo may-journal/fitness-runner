@@ -30,7 +30,8 @@ func findGoModule(step actions.Step, _ []string) error {
 	if err != nil {
 		return err
 	}
-	files := strings.Fields(listed)
+	// One path per line, since a path may hold a space.
+	files := strings.FieldsFunc(listed, func(r rune) bool { return r == '\n' })
 	slices.SortFunc(files, byDepth)
 	return step.Output("file", strings.Join(files[:min(len(files), 1)], ""))
 }

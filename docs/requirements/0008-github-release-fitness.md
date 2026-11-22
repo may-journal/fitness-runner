@@ -2,7 +2,8 @@
 
 ## Why
 
-I release fitness from `version.txt` and checked archives, with notes that list each new entry and major tags that move.
+I release fitness and fitness-ci from `version.txt` and checked archives, with notes that list each new entry and major tags that move.
+
 ## Measurement
 
 releases whose tag, archives and notes match the repo

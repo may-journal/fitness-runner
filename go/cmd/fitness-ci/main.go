@@ -36,8 +36,13 @@ func main() {
 	os.Exit(command(os.Args[1:]))
 }
 
-// command runs the subcommand args name and returns the exit code.
+// command runs the subcommand args name and returns the exit code. The
+// fitness-ci action passes the subcommand and its arguments as one word,
+// which this splits.
 func command(args []string) int {
+	if len(args) == 1 {
+		args = strings.Fields(args[0])
+	}
 	if len(args) == 0 {
 		fmt.Print(usage())
 		return 2

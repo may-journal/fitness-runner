@@ -924,10 +924,8 @@ func installDeleted(t *testing.T, repo, ref, event string, goAnswers, ghAnswers 
 	write(t, dir, map[string]string{"event.json": event})
 	pathFile := filepath.Join(dir, "path")
 	mustDo(t, os.WriteFile(pathFile, nil, 0o644))
-	script, err := filepath.Abs("../../.github/actions/fitness-install/install-source.sh")
-	mustDo(t, err)
 	out, code := execute(t, func() *exec.Cmd {
-		cmd := exec.Command(script, ref)
+		cmd := exec.Command(fitnessCI(t), "install-source "+ref)
 		cmd.Env = append(userEnv(), rp.env...)
 		cmd.Env = append(cmd.Env, "GITHUB_EVENT_PATH="+filepath.Join(dir, "event.json"), "GITHUB_REPOSITORY="+repo, "GITHUB_PATH="+pathFile)
 		return cmd
@@ -973,18 +971,15 @@ func hasLine(text, line string) bool {
 	return slices.ContainsFunc(strings.Split(text, "\n"), func(l string) bool { return strings.TrimSpace(l) == line })
 }
 
-// scriptCIFetch runs the shared action script at path by its path, as the
-// action's step does, and returns the outputs it wrote.
-func scriptCIFetch(t *testing.T, path string, env ...string) map[string]string {
+// scriptCIFetch runs the fitness-ci subcommand a shared action's step names,
+// as the fitness-ci action passes it, and returns the outputs it wrote.
+func scriptCIFetch(t *testing.T, sub string, env ...string) map[string]string {
 	t.Helper()
 	output := filepath.Join(t.TempDir(), "output")
-	script, err := filepath.Abs(filepath.Join("..", "..", ".github", "actions", path))
-	mustDo(t, err)
-	gitExecutableCIFetch(t, script)
-	cmd := exec.Command(script)
+	cmd := exec.Command(fitnessCI(t), sub)
 	cmd.Env = append(append(os.Environ(), "GITHUB_OUTPUT="+output), env...)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("%s: %v\n%s", path, err, out)
+		t.Fatalf("fitness-ci %s: %v\n%s", sub, err, out)
 	}
 	data, _ := os.ReadFile(output)
 	outputs := map[string]string{}
@@ -994,16 +989,6 @@ func scriptCIFetch(t *testing.T, path string, env ...string) map[string]string {
 		}
 	}
 	return outputs
-}
-
-// gitExecutableCIFetch fails the test unless git stores script as executable,
-// which a checkout with core.fileMode off would not show on disk.
-func gitExecutableCIFetch(t *testing.T, script string) {
-	t.Helper()
-	stage, err := exec.Command("git", "ls-files", "-s", "--", script).Output()
-	if err != nil || !strings.HasPrefix(string(stage), "100755 ") {
-		t.Errorf("git must hold %s as executable, got %q (%v)", script, stage, err)
-	}
 }
 
 // indexHashCIFetch is the SHA-256 of the release index GitHub serves now.

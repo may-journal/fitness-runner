@@ -64,16 +64,16 @@ func replaceFirst(re *regexp.Regexp, s, repl string) string {
 }
 
 func shapeReleaseNotes(step actions.Step, _ []string) error {
-	pr := env("PR")
-	body, err := actions.Gh("pr", "view", pr, "--json", "body", "--jq", ".body")
+	pr := stepPR()
+	body, err := pr.field("body")
 	if err != nil {
 		return err
 	}
-	head, err := actions.Gh("pr", "view", pr, "--json", "headRefOid", "--jq", ".headRefOid")
+	head, err := pr.field("headRefOid")
 	if err != nil {
 		return err
 	}
-	return editBody(step, pr, body, shapeNotes(body, head))
+	return editBody(step, pr.number, body, shapeNotes(body, head))
 }
 
 // editBody sets the PR's body to edited and writes edited=true, unless it is
@@ -113,7 +113,7 @@ func linkReleaseTrackingIssue(step actions.Step, _ []string) error {
 	if err != nil {
 		return err
 	}
-	body, err := actions.Gh("pr", "view", pr, "--json", "body", "--jq", ".body")
+	body, err := stepPR().field("body")
 	if err != nil || strings.Contains(body, "Closes #"+issue+".") {
 		return err
 	}
@@ -208,7 +208,7 @@ func moveMajorTag(step actions.Step, _ []string) error {
 		return err
 	}
 	for _, r := range plan {
-		if err := moveTag("repos/"+env("GITHUB_REPOSITORY"), r); err != nil {
+		if err := moveTag(actions.RepoPath(), r); err != nil {
 			return err
 		}
 	}

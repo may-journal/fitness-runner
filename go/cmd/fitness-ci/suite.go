@@ -17,8 +17,6 @@ func init() {
 	register("check-secrets", "Fail with the secret's name when the automation App's APP_ID or APP_KEY did not reach this repo.", nil, checkSecrets)
 	register("run-commands", "Run each fitness command in FITNESS_COMMANDS after checking every name, so a typo runs nothing and one run lists every failure.", nil, runCommands)
 	register("install-source-checks", "Install the pinned checks beside a source-built engine and point later steps at them with FITNESS_CHECKS_DIR.", nil, installSourceChecks)
-	register("draw-box-diagram", "Draw the box diagram from the performance record with the fitness program in FITNESS, when fitness wrote one.", nil, drawBoxDiagram)
-	register("report-outcome", "Annotate a failure fitness did not annotate, and link the complete reports at REPORTS_URL.", nil, reportOutcome)
 	register("cache-key", "Write the Go build cache's prefix, key and save flag for FAMILY, GO_VERSION, SOURCE_HASH and SAVE.", []string{"prefix", "key", "save"}, cacheKey)
 }
 
@@ -92,7 +90,10 @@ func badCommands(commands []string) string {
 // stops before any command runs.
 func refuse(why string) error {
 	actions.Error("The fitness-command action " + why + ".")
-	return firstError(func() error { return actions.Env("FITNESS_FAILURE_REPORTED", "true") }, func() error { return actions.Failed })
+	if err := actions.Env("FITNESS_FAILURE_REPORTED", "true"); err != nil {
+		return err
+	}
+	return actions.Failed
 }
 
 func installSourceChecks(actions.Step, []string) error {
@@ -110,24 +111,6 @@ func installSourceChecks(actions.Step, []string) error {
 		return nil
 	}
 	return actions.Env("FITNESS_CHECKS_DIR", lines[1])
-}
-
-func drawBoxDiagram(actions.Step, []string) error {
-	record := performanceRecord("fitness.json")
-	if !exists(record) {
-		return nil
-	}
-	return actions.Run(env("FITNESS"), "boxes", record, performanceRecord("fitness.html"))
-}
-
-func reportOutcome(actions.Step, []string) error {
-	if env("JOB_STATUS") == "failure" && env("ALREADY_ANNOTATED") != "true" {
-		actions.Error("Workflow job " + env("GITHUB_JOB") + " failed; open its logs for the failed step and cause.")
-	}
-	if url := env("REPORTS_URL"); url != "" {
-		return actions.Summary(fmt.Sprintf("[Download complete Fitness reports](%s)\n", url))
-	}
-	return nil
 }
 
 func cacheKey(step actions.Step, _ []string) error {

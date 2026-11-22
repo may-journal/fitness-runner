@@ -51,9 +51,9 @@ func removeFitnessCI() {
 var (
 	// commandInput finds the subcommand a step hands to the fitness-ci action,
 	// reading on from the action's name to the end of the step.
-	commandInput = regexp.MustCompile(`actions/fitness-ci\n(?: +[^-\s][^\n]*\n)*? +command: ([a-z-]+(?: [a-z-]+)*)\n`)
+	commandInput = regexp.MustCompile(`actions/fitness-ci\n(?: +[^-\s][^\n]*\n)*? +command: ([a-z-]+(?: [^\n]+)?)\n`)
 	// commandRun finds the subcommand a step runs from the job's bin folder.
-	commandRun = regexp.MustCompile(`run: bin/fitness-ci ([a-z-]+(?: [a-z-]+)*)\n`)
+	commandRun = regexp.MustCompile(`run: (?:bin/)?fitness-ci ([a-z-]+(?: [a-z-]+)*)\n`)
 )
 
 // quoted is s quoted for bash.
@@ -112,15 +112,8 @@ func yamlFiles(t *testing.T, root string) []string {
 	return files
 }
 
-// scriptRef finds a shell script a step still runs, beside the root action
-// or a shared one.
-var scriptRef = regexp.MustCompile(`(?:action_path \}\}/((?:\.\./)*[\w./-]+\.sh)|"\$FITNESS_(?:INSTALL|SAVE)_ACTION/([\w-]+\.sh)")`)
-
-// executable reports whether path is a file someone can run.
-func executable(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.Mode()&0o111 != 0
-}
+// scriptRef finds a step that runs a shell script, which no step may.
+var scriptRef = regexp.MustCompile(`run: [^\n]*\.sh\b[^\n]*`)
 
 // subcommandOutputs is every fitness-ci subcommand and the step outputs it
 // writes, as its help lists them.
@@ -142,24 +135,19 @@ func subcommandOutputs(t *testing.T) map[string][]string {
 	return subs
 }
 
-// badReferences counts file's subcommand and script references, listing each
-// unknown subcommand and each missing or non-executable script.
+// badReferences counts file's subcommand references, listing each unknown
+// subcommand and each step that runs a shell script.
 func badReferences(t *testing.T, file string, subs map[string][]string) (named int, bad []string) {
 	t.Helper()
 	text, err := os.ReadFile(file)
 	mustDo(t, err)
-	for _, m := range subcommandRefs(string(text)) {
+	refs := subcommandRefs(string(text))
+	for _, m := range refs {
 		if _, ok := subs[strings.Fields(m[1])[0]]; !ok {
 			bad = append(bad, strings.TrimSpace(m[0]))
 		}
 	}
-	scripts := scriptRef.FindAllStringSubmatch(string(text), -1)
-	for _, m := range scripts {
-		if !executable(filepath.Join(filepath.Dir(file), m[1]+m[2])) {
-			bad = append(bad, m[0])
-		}
-	}
-	return len(subcommandRefs(string(text))) + len(scripts), bad
+	return len(refs), append(bad, scriptRef.FindAllString(string(text), -1)...)
 }
 
 // subcommandRefs is every step of text that names a fitness-ci subcommand,
@@ -211,7 +199,7 @@ func ciStepLine(t *testing.T, file, command string) (line string, env []string) 
 		return "bin/fitness-ci " + command, nil
 	}
 	if callsCommand(commandInput, string(raw), command) {
-		return actionRunLine(t), []string{"COMMAND=" + command, "FITNESS_CI=" + fitnessCI(t)}
+		return actionRunLine(t), []string{"COMMAND=" + command}
 	}
 	t.Fatalf("%s runs no fitness-ci %s", ciFile(file), command)
 	return "", nil
@@ -219,6 +207,9 @@ func ciStepLine(t *testing.T, file, command string) (line string, env []string) 
 
 // ciFile is the workflow file, or the shared action's file, file names.
 func ciFile(file string) string {
+	if file == "action.yml" {
+		return filepath.Join("..", "..", file)
+	}
 	if strings.HasSuffix(file, ".yml") {
 		return filepath.Join("..", "..", ".github", "workflows", file)
 	}
@@ -235,8 +226,9 @@ func actionRunLine(t *testing.T) string {
 	t.Helper()
 	action, err := os.ReadFile(filepath.Join("..", "..", ".github", "actions", "fitness-ci", "action.yml"))
 	mustDo(t, err)
-	_, run, _ := strings.Cut(string(action), "\n      run: '")
-	run, _, _ = strings.Cut(run, "'\n")
+	_, step, _ := strings.Cut(string(action), "- name: Run the subcommand\n")
+	_, run, _ := strings.Cut(step, "\n      run: ")
+	run, _, _ = strings.Cut(run, "\n")
 	return run
 }
 
@@ -280,6 +272,8 @@ func runFitnessCI(t *testing.T, s ciStep) ciRun {
 		for name, path := range files {
 			cmd.Env = append(cmd.Env, name+"="+path)
 		}
+		// The job's bin/ comes first on PATH, as a job finds fitness-ci.
+		cmd.Env = append(cmd.Env, "PATH="+filepath.Join(dir, "bin")+string(os.PathListSeparator)+strings.TrimPrefix(rp.env[0], "PATH="))
 		cmd.Env = append(append(cmd.Env, actionEnv...), s.env...)
 		return cmd
 	})

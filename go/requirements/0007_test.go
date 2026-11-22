@@ -128,7 +128,7 @@ func Test0007_2(t *testing.T) {
 		}},
 		{"the fitness-install action", func(t *testing.T) {
 			t.Parallel()
-			keys := scriptCIFetch(t, "fitness-install/index-key.sh", "RUNNER_OS=Linux", "RUNNER_ARCH=ARM64", "GITHUB_JOB=check")
+			keys := scriptCIFetch(t, "index-key", "RUNNER_OS=Linux", "RUNNER_ARCH=ARM64", "GITHUB_JOB=check")
 			index := "fitness-checks-Linux-ARM64-" + indexHashCIFetch(t) + "-"
 			want := map[string]string{"base": "fitness-checks-Linux-ARM64-", "index": index, "job": index + "check-"}
 			if !maps.Equal(keys, want) {
@@ -170,7 +170,7 @@ func Test0007_2(t *testing.T) {
 				{"fitness-checks-Linux-ARM64-new-check-1", []string{"a-1", "b-1"}},
 			} {
 				home := cacheCIFetch(t)
-				keys := scriptCIFetch(t, "save-checks/set-key.sh", "HOME="+home, "XDG_CACHE_HOME=", "FITNESS_INDEX_KEY=fitness-checks-Linux-ARM64-new-", "FITNESS_JOB_KEY=fitness-checks-Linux-ARM64-new-check-", "FITNESS_RESTORED_KEY="+c.restored)
+				keys := scriptCIFetch(t, "set-key", "HOME="+home, "XDG_CACHE_HOME=", "FITNESS_INDEX_KEY=fitness-checks-Linux-ARM64-new-", "FITNESS_JOB_KEY=fitness-checks-Linux-ARM64-new-check-", "FITNESS_RESTORED_KEY="+c.restored)
 				entries, err := os.ReadDir(filepath.Join(home, ".cache", "fitness", "checks"))
 				mustDo(t, err)
 				var kept []string
@@ -899,27 +899,42 @@ func ciStepCases() cases {
 				t.Errorf("want the checks folder the install printed second, got %q", run.env)
 			}
 		}},
-		{"a job whose suite wrote a performance record, and its reports", func(t *testing.T) {
+		{"a job whose suite wrote a performance record, then failed without an annotation", func(t *testing.T) {
 			t.Parallel()
-			dir := t.TempDir()
+			dir, temp := t.TempDir(), t.TempDir()
 			write(t, dir, map[string]string{"go/bin/fitness": tool("fitness")})
-			run := runFitnessCI(t, ciStep{file: "fitness-reports", command: "draw-box-diagram", dir: dir, env: []string{"FITNESS=go/bin/fitness"}})
-			sees(t, run.out, run.code, 0)
-			if strings.Contains(run.out, "fitness boxes") {
-				t.Errorf("no record means no diagram:\n%s", run.out)
-			}
-			record := filepath.Join(t.TempDir(), "fitness-performance", "fitness.json")
-			write(t, filepath.Dir(record), map[string]string{"fitness.json": "{}"})
-			for file, command := range map[string]string{"fitness-reports": "draw-box-diagram", "ci.yml": "show-performance"} {
-				run = runFitnessCI(t, ciStep{file: file, command: command, dir: dir, env: []string{"FITNESS=go/bin/fitness", "RUNNER_TEMP=" + filepath.Dir(filepath.Dir(record))}})
-				sees(t, run.out, run.code, 0, "fitness "+map[string]string{"draw-box-diagram": "boxes", "show-performance": "perf"}[command]+" "+record)
-			}
+			write(t, filepath.Join(temp, "fitness-performance"), map[string]string{"fitness.json": "{}"})
+			run := runFitnessCI(t, ciStep{file: "fitness-reports", command: "draw-box-diagram", dir: dir, env: []string{"FITNESS=go/bin/fitness", "RUNNER_TEMP=" + temp}})
+			sees(t, run.out, run.code, 0, "fitness boxes "+filepath.Join(temp, "fitness-performance", "fitness.json"))
 			run = runFitnessCI(t, ciStep{file: "fitness-reports", command: "report-outcome",
 				env: []string{"JOB_STATUS=failure", "ALREADY_ANNOTATED=false", "GITHUB_JOB=check", "REPORTS_URL=https://example.com/reports"}})
 			sees(t, run.out, run.code, 0, "::error::Workflow job check failed; open its logs for the failed step and cause.")
 			if run.summary != "[Download complete Fitness reports](https://example.com/reports)\n" {
 				t.Errorf("the summary must link the reports, got %q", run.summary)
 			}
+		}},
+		{"a Fitness action run whose installation failed unannotated", func(t *testing.T) {
+			t.Parallel()
+			run := runFitnessCI(t, ciStep{file: "action.yml", command: "report-action-outcome",
+				env: []string{"REPORT_STATUS=failure", "REPORT_ALREADY_ANNOTATED=false", "GITHUB_SERVER_URL=https://github.com", "GITHUB_RUN_ID=9"}})
+			sees(t, run.out, run.code, 0, "::error::Fitness installation or execution failed")
+			if run.env != "FITNESS_FAILURE_REPORTED=true\n" || !strings.Contains(run.summary, "### Fitness action: failure") {
+				t.Errorf("want the failure marked reported and summarized, got env %q and summary %q", run.env, run.summary)
+			}
+		}},
+		{"a CI job whose suite wrote a performance record, and one whose suite did not", func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			write(t, dir, map[string]string{"go/bin/fitness": tool("fitness")})
+			run := runFitnessCI(t, ciStep{file: "ci.yml", command: "show-performance", dir: dir})
+			sees(t, run.out, run.code, 0)
+			if strings.Contains(run.out, "fitness perf") {
+				t.Errorf("no record means nothing to show:\n%s", run.out)
+			}
+			record := filepath.Join(t.TempDir(), "fitness-performance", "fitness.json")
+			write(t, filepath.Dir(record), map[string]string{"fitness.json": "{}"})
+			run = runFitnessCI(t, ciStep{file: "ci.yml", command: "show-performance", dir: dir, env: []string{"RUNNER_TEMP=" + filepath.Dir(filepath.Dir(record))}})
+			sees(t, run.out, run.code, 0, "fitness perf "+record)
 		}},
 		{"a Go build cache family on a push to main", func(t *testing.T) {
 			t.Parallel()

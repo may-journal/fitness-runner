@@ -1,7 +1,8 @@
 name: Set up Go with a build cache
 description: >-
-  Install the Go version go/go.mod names, then restore the Go build cache for
-  one cache family. Only a push to main saves the cache.
+  Install the Go version go/go.mod names, build fitness-ci into bin/ and put
+  it on PATH, then restore the Go build cache for one cache family. Only a
+  push to main saves the cache.
 inputs:
   cache-key:
     description: >-
@@ -26,19 +27,26 @@ runs:
       with:
         go-version-file: go/go.mod
         cache: false
+    # This repo's jobs build fitness-ci from the checkout into bin/, and the
+    # shared actions they use find it on PATH.
+    - name: Build fitness-ci
+      shell: bash
+      run: make fitness-ci
+    - name: Put fitness-ci on PATH
+      shell: bash
+      run: echo "$PWD/bin" >> "$GITHUB_PATH"
     # The key is family, OS, arch, Go version, then a hash of every file under
     # go/, embedded assets included. Each part ends in a dash, so no prefix
     # matches another family or arch.
     - id: key
       if: ${{ inputs.cache-key != '' }}
-      uses: $/.github/actions/fitness-ci
+      shell: bash
       env:
         FAMILY: ${{ inputs.cache-key }}
         GO_VERSION: ${{ steps.setup.outputs.go-version }}
         SOURCE_HASH: ${{ hashFiles('go/**', '!go/bin/**') }}
         SAVE: ${{ inputs.save == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      with:
-        command: cache-key
+      run: bin/fitness-ci cache-key
     # Pull requests and other events only restore, so their caches never
     # crowd out main's, which every branch can read.
     - if: ${{ steps.key.outputs.save == 'false' }}

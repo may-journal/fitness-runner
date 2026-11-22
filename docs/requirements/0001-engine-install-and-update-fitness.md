@@ -21,7 +21,7 @@ installs
 - 0001.2
   - Given Developer has a GitHub job
     - When it runs `fitness-install --github-action`
-      - Then it writes the folder to the job outputs and summarizes the result
+      - Then it writes the folder to the job outputs and summarizes the result, refusing a release outside the action's major ref
 - 0001.3
   - Given Developer asks for the latest release
     - When `fitness-install` looks it up

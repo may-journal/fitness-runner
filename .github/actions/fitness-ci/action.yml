@@ -1,14 +1,12 @@
 name: Run fitness-ci
 description: >-
-  Build fitness-ci once per job into the bin folder of this repo's checkout,
-  then run one of its subcommands with the environment of the step that calls
-  it. Reusable workflows and shared actions use it, since their callers'
-  checkouts do not hold the program.
+  Run one fitness-ci subcommand with the environment of the step that calls
+  it. fitness-ci ships in the fitness bundle, so a job that installed fitness
+  already has it; any other job installs the bundle first, and needs no Go.
 inputs:
   command:
-    description: The subcommand and its arguments, such as auto-merge. Empty only builds the program.
-    required: false
-    default: ''
+    description: The subcommand and its arguments, such as auto-merge.
+    required: true
 outputs:
   edited:
     description: Set to true by a subcommand that edited the release PR.
@@ -31,24 +29,46 @@ outputs:
   green:
     description: Set to true by a subcommand that found every check green.
     value: ${{ steps.run.outputs.green }}
-  prefix:
-    description: The Go build cache's key prefix.
-    value: ${{ steps.run.outputs.prefix }}
+  base:
+    description: The prefix of any checks set.
+    value: ${{ steps.run.outputs.base }}
+  index:
+    description: The prefix of this release index's checks sets.
+    value: ${{ steps.run.outputs.index }}
+  job:
+    description: The prefix of this job's checks sets.
+    value: ${{ steps.run.outputs.job }}
   key:
-    description: The Go build cache's key.
+    description: The key a checks set saves under.
     value: ${{ steps.run.outputs.key }}
-  save:
-    description: Whether the job saves the Go build cache.
-    value: ${{ steps.run.outputs.save }}
 runs:
   using: composite
   steps:
-    # The first use in a job builds; FITNESS_CI then tells later uses the
-    # program is there. The caller's own step condition decides whether this
-    # action runs at all, so its steps run whenever it does.
-    - name: Set up Go for fitness-ci
+    # The caller's own step condition decides whether this action runs, so
+    # its steps run whenever it does.
+    - name: Find fitness-ci
+      id: find
+      if: ${{ always() }}
+      continue-on-error: true
+      shell: bash
+      run: command -v fitness-ci
+    - name: Install the fitness bundle, which holds fitness-ci
+      id: bundle
+      if: ${{ always() && steps.find.outcome == 'failure' }}
+      uses: may-journal/fitness-runner@v1
+      with:
+        install-only: 'true'
+    - name: Find fitness-ci in the bundle
+      id: found
+      if: ${{ always() && steps.find.outcome == 'failure' }}
+      continue-on-error: true
+      shell: bash
+      run: command -v fitness-ci
+    # A bundle released before fitness-ci lacks it, so until one holds it,
+    # this action builds it from its own checkout.
+    - name: Set up Go for a bundle without fitness-ci
       id: go
-      if: ${{ always() && env.FITNESS_CI == '' }}
+      if: ${{ always() && steps.found.outcome == 'failure' }}
       uses: actions/setup-go@v5
       with:
         go-version-file: ${{ github.action_path }}/../../../go/go.mod
@@ -59,16 +79,18 @@ runs:
       if: ${{ always() && steps.go.outcome == 'success' }}
       shell: bash
       working-directory: ${{ github.action_path }}/../../..
-      run: go -C go build -o ../bin/fitness-ci ./cmd/fitness-ci
-    - name: Point later steps at fitness-ci
+      run: make fitness-ci
+    - name: Put the built fitness-ci on PATH
       if: ${{ always() && steps.build.outcome == 'success' }}
       shell: bash
       working-directory: ${{ github.action_path }}/../../..
-      run: echo "FITNESS_CI=$PWD/bin/fitness-ci" >> "$GITHUB_ENV"
+      run: echo "$PWD/bin" >> "$GITHUB_PATH"
+    # The command is one argument, which fitness-ci splits into words, so
+    # bash never expands a glob in it.
     - name: Run the subcommand
       id: run
-      if: ${{ always() && inputs.command != '' && env.FITNESS_CI != '' }}
+      if: ${{ always() }}
       shell: bash
       env:
         COMMAND: ${{ inputs.command }}
-      run: '"$FITNESS_CI" $COMMAND'
+      run: fitness-ci "$COMMAND"

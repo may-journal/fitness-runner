@@ -42,6 +42,14 @@ func (c Call) Capture(name string, args ...string) (string, error) {
 	return trim(out.String()), err
 }
 
+// Raw runs name with args and returns its stdout byte for byte. Stderr
+// passes through to the log.
+func (c Call) Raw(name string, args ...string) ([]byte, error) {
+	var out bytes.Buffer
+	err := c.run(name, args, &out, os.Stderr)
+	return out.Bytes(), err
+}
+
 // Quiet runs name with args and returns its stdout and stderr apart, trailing
 // newlines dropped, printing neither.
 func (c Call) Quiet(name string, args ...string) (stdout, stderr string, err error) {
@@ -91,6 +99,22 @@ func trim(s string) string {
 // Gh runs gh with args and returns its stdout.
 func Gh(args ...string) (string, error) {
 	return Call{}.Capture("gh", args...)
+}
+
+// RepoPath is the REST path of the repository the run belongs to.
+func RepoPath() string {
+	return "repos/" + os.Getenv("GITHUB_REPOSITORY")
+}
+
+// GhAnswer runs gh with args and returns what it printed on both streams.
+// When gh fails, it prints failure with that answer as an error annotation
+// and returns Failed.
+func GhAnswer(failure string, args ...string) (string, error) {
+	answer, err := Call{}.Combined("gh", args...)
+	if err != nil {
+		return answer, Fail(failure + ": " + answer)
+	}
+	return answer, nil
 }
 
 // GhJSON runs gh with args and decodes its stdout into v.

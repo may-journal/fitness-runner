@@ -19,13 +19,13 @@ runs:
     - name: Name the checks set
       id: set
       if: ${{ inputs.job-key != '' }}
-      shell: bash
+      uses: $/.github/actions/fitness-ci
       env:
         FITNESS_INDEX_KEY: ${{ inputs.index-key }}
         FITNESS_JOB_KEY: ${{ inputs.job-key }}
         FITNESS_RESTORED_KEY: ${{ inputs.restored-key }}
-        FITNESS_SAVE_ACTION: ${{ github.action_path }}
-      run: '"$FITNESS_SAVE_ACTION/set-key.sh"'
+      with:
+        command: set-key
     - name: Save the checks set
       if: ${{ steps.set.outputs.key != '' && steps.set.outputs.key != inputs.restored-key }}
       uses: actions/cache/save@v4

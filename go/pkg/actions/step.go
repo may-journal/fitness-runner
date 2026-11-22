@@ -12,7 +12,8 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 // Step is one workflow step and the outputs it may write.
@@ -40,18 +41,13 @@ func Path(dir string) error {
 	return appendLine("GITHUB_PATH", dir)
 }
 
-// Summary appends text to the job summary, GITHUB_STEP_SUMMARY.
-func Summary(text string) error {
-	return appendText("GITHUB_STEP_SUMMARY", text)
+// Summary appends a line to the job summary, GITHUB_STEP_SUMMARY.
+func Summary(line string) error {
+	return appendLine("GITHUB_STEP_SUMMARY", line)
 }
 
 // appendLine appends line and a newline to the file the variable name names.
 func appendLine(name, line string) error {
-	return appendText(name, line+"\n")
-}
-
-// appendText appends text to the file the variable name names.
-func appendText(name, text string) error {
 	path := os.Getenv(name)
 	if path == "" {
 		return fmt.Errorf("%s is not set", name)
@@ -60,7 +56,7 @@ func appendText(name, text string) error {
 	if err != nil {
 		return err
 	}
-	_, err = f.WriteString(text)
+	_, err = f.WriteString(line + "\n")
 	return errors.Join(err, f.Close())
 }
 
@@ -74,19 +70,22 @@ func Warning(message string) { annotate("warning", message) }
 // for that.
 func Error(message string) { annotate("error", message) }
 
-// annotate prints the workflow command kind with message, as `echo` does.
+// annotate prints the workflow command kind with message, escaped so a
+// multi-line message stays one annotation.
 func annotate(kind, message string) {
-	fmt.Printf("::%s::%s\n", kind, message)
-}
-
-// Escape keeps a multi-line message on one annotation line.
-func Escape(message string) string {
-	return strings.NewReplacer("%", "%25", "\r", "%0D", "\n", "%0A").Replace(message)
+	fmt.Printf("::%s::%s\n", kind, report.EscapeData(message))
 }
 
 // Failed is the error a step returns once it has annotated its own failure,
 // so the program exits 1 without printing it again.
 var Failed = errors.New("the step failed")
+
+// Skip prints message as a notice and returns nil: the step passes without
+// doing its work.
+func Skip(message string) error {
+	Notice(message)
+	return nil
+}
 
 // Fail prints message as an error annotation and returns Failed.
 func Fail(message string) error {

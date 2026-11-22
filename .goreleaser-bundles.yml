@@ -16,9 +16,19 @@ builds:
     goarch: [amd64, arm64]
     flags: [-trimpath, -buildvcs=false]
     ldflags: ['-s -w -X main.version={{ .Version }}']
+  # The shared actions' steps run it beside fitness, so callers need no Go.
+  - id: fitness-ci
+    dir: go
+    main: ./cmd/fitness-ci
+    binary: fitness-ci
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath, -buildvcs=false]
+    ldflags: ['-s -w']
 archives:
   - id: bundle
-    ids: [fitness]
+    ids: [fitness, fitness-ci]
     formats: [tar.gz]
     name_template: 'fitness-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     wrap_in_directory: true

@@ -353,7 +353,7 @@ func Test0008_7(t *testing.T) {
 				t.Errorf("%s names %q, which fitness-ci lacks or which is missing or not executable", file, ref)
 			}
 		}
-		if named < 40 {
+		if named < 30 {
 			t.Errorf("want the test to read the repo's subcommand and script references, found %d", named)
 		}
 	}}}

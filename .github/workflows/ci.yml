@@ -22,12 +22,8 @@ jobs:
         with:
           cache-key: fitness
           save: true
-      # The steps below call fitness-ci, built once into bin/ for the job.
-      - name: Build fitness-ci
-        run: go -C go build -o ../bin/fitness-ci ./cmd/fitness-ci
+      # setup-go-cache built fitness-ci into bin/ for the steps below.
       - run: bin/fitness-ci build-fitness
-      # The scripts that stay in shell, since they run where Go may be missing, are linted here.
-      - run: shellcheck --severity=warning scripts/*.sh .github/actions/*/*.sh
       # The engine built here holds no check, so the suite installs each one.
       - run: bin/fitness-ci export-checks-dir
         env:
