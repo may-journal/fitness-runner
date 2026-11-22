@@ -24,7 +24,7 @@ jobs:
           save: true
       # The steps below call fitness-ci, built once into bin/ for the job.
       - name: Build fitness-ci
-        uses: ./.github/actions/fitness-ci
+        run: go -C go build -o ../bin/fitness-ci ./cmd/fitness-ci
       - run: bin/fitness-ci build-fitness
       # The scripts that stay in shell, since they run where Go may be missing, are linted here.
       - run: shellcheck --severity=warning scripts/*.sh .github/actions/*/*.sh

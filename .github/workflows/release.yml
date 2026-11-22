@@ -50,8 +50,9 @@ jobs:
         with:
           name: fitness-release
           path: out
+      - uses: ./.github/actions/setup-go-cache
       - name: Build fitness-ci
-        uses: ./.github/actions/fitness-ci
+        run: go -C go build -o ../bin/fitness-ci ./cmd/fitness-ci
       - name: Inspect release publication state
         id: publication
         env:
@@ -99,8 +100,9 @@ jobs:
         with:
           name: fitness-release
           path: out
+      - uses: ./.github/actions/setup-go-cache
       - name: Build fitness-ci
-        uses: ./.github/actions/fitness-ci
+        run: go -C go build -o ../bin/fitness-ci ./cmd/fitness-ci
       - name: Verify public downloads with the Go tool
         id: verify-download
         env:
@@ -153,8 +155,9 @@ jobs:
         with:
           name: fitness-release
           path: out
+      - uses: ./.github/actions/setup-go-cache
       - name: Build fitness-ci
-        uses: ./.github/actions/fitness-ci
+        run: go -C go build -o ../bin/fitness-ci ./cmd/fitness-ci
       - name: Promote the verified release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
