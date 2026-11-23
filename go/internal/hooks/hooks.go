@@ -1,9 +1,5 @@
-// Package hooks embeds the canonical may-journal git hooks that `fitness init`
-// installs into a consumer repo. The hooks run the latest fitness through the
-// installer in $FITNESS_INSTALL_DIR (default ~/.local/share/fitness), so no
-// fitness on the PATH is needed.
-//
-//fitness:topic hooks
+// Package hooks embeds the git hooks `fitness init` installs, as
+// go/docs/hooks.md describes.
 package hooks
 
 import "embed"

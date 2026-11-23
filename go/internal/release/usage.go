@@ -13,6 +13,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/docs"
 )
 
 // usageDirective marks a comment that documents one form of the fitness
@@ -206,7 +208,7 @@ func entriesSource(entries []usageEntry) string {
 
 // llmsPage is one page teaching an AI the whole CLI: exit codes, commands,
 // local-branch, and docs topics.
-func llmsPage(u usageDoc, localBranch checkDoc, topics []topicDoc) string {
+func llmsPage(u usageDoc, localBranch checkDoc, topics []docs.Topic) string {
 	var b strings.Builder
 	b.WriteString("# fitness\n\n" + u.Intro)
 	b.WriteString("\n## Run checks\n\n")

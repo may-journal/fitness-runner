@@ -78,7 +78,7 @@ Commands:
   fitness explain <check> [--json]
       Prints why a check exists, what it judges, and the config keys it reads.
   fitness docs [topic]
-      Lists the guide topics, or prints one, from the code's doc comments.
+      Lists the guide topics, or prints one, from the Markdown in go/docs.
   fitness check --list
   fitness check <name> [args]
       Prints each check the engine runs itself, one per line, or runs one check by name, installed or the repo's own.

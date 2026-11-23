@@ -12,7 +12,7 @@ A run resolves the checks, runs them side by side under two totals, and prints a
 
 ## Learn the rest
 
-`fitness list` names every check, `fitness explain <check>` says why one exists and how to pass it, and `fitness docs` serves the guides. All of them, and this page, come from the code's own doc comments.
+`fitness list` names every check, `fitness explain <check>` says why one exists and how to pass it, and `fitness docs` serves the guides. The guides are Markdown in go/docs.
 
 ## Run checks
 
@@ -34,7 +34,7 @@ A run resolves the checks, runs them side by side under two totals, and prints a
 - `fitness check-versions`: Prints each check the repo installs with its version pin, as checkVersions in .fitnessrc.json sets them.
 - `fitness prefetch`: Downloads and verifies every check the repo pins, at every pinned version, so later runs and CI caches need no network.
 - `fitness explain <check> [--json]`: Prints why a check exists, what it judges, and the config keys it reads.
-- `fitness docs [topic]`: Lists the guide topics, or prints one, from the code's doc comments.
+- `fitness docs [topic]`: Lists the guide topics, or prints one, from the Markdown in go/docs.
 - `fitness check --list` or `fitness check <name> [args]`: Prints each check the engine runs itself, one per line, or runs one check by name, installed or the repo's own.
 - `fitness config [--json] [--policy=..] [--checks=..]` or `fitness config schema`: Shows the resolved settings and each check's state, or prints a JSON Schema for the config file.
 - `fitness init`: Installs the shared git hooks into this repo.
@@ -62,10 +62,10 @@ A run resolves the checks, runs them side by side under two totals, and prints a
 
 ## Topics
 
-- `fitness docs config`: Package conf loads .fitnessrc.json — the Go runner's configuration file.
-- `fitness docs coverage`: Package goal holds the coverage goal every coverage check judges by, whichever language it measures: every counted line, branch or statement covered.
-- `fitness docs github`: cspell:ignore approv aproved dont doesnt didnt cant wont isnt wasnt arent
-- `fitness docs hooks`: Package hooks embeds the canonical may-journal git hooks that `fitness init` installs into a consumer repo.
-- `fitness docs languages`: Package lang defines what a language module brings to a run and orders what modules claim against what is installed or embedded.
-- `fitness docs local-checks`: Package repocheck finds a repo's own checks (ADR 0009, ADR 0012) and builds the Go ones, as docs/local-checks.md describes.
-- `fitness docs protocol`: Package checkkit is the contract between the fitness runner and a check binary, which prints one JSON Result on stdout.
+- `fitness docs config`: `.fitnessrc.json` is the optional file at a repo's root that tunes which checks run and how strictly they judge.
+- `fitness docs coverage`: Every coverage check judges by one goal, whichever language it measures: every counted line, branch or statement covered.
+- `fitness docs github`: Local checks and GitHub Actions share one set of GitHub judgments, kept in go/internal/metadata.
+- `fitness docs hooks`: `fitness init` installs the canonical may-journal git hooks, which go/internal/hooks embeds, into a consumer repo.
+- `fitness docs languages`: A language module brings its checks and tools to a run, and go/pkg/lang orders what modules claim against what is installed or embedded.
+- `fitness docs local-checks`: go/pkg/repocheck finds a repo's own checks and builds the Go ones, as ADR 0009, ADR 0012 and docs/local-checks.md describe.
+- `fitness docs protocol`: A check binary talks to the fitness runner by printing one JSON Result on stdout, under the contract go/pkg/checkkit holds.

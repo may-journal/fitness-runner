@@ -1,9 +1,4 @@
-// Package goal holds the coverage goal every coverage check judges by,
-// whichever language it measures: every counted line, branch or statement
-// covered. A check compares exact counts, so a total that rounds to the goal
-// still falls short.
-//
-//fitness:topic coverage
+// Package goal holds the coverage goal, as go/docs/coverage.md describes.
 package goal
 
 import "strconv"

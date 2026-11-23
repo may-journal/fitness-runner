@@ -1,7 +1,5 @@
-// Package repocheck finds a repo's own checks (ADR 0009, ADR 0012) and builds
-// the Go ones, as docs/local-checks.md describes.
-//
-//fitness:topic local-checks
+// Package repocheck finds and builds a repo's own checks, as
+// go/docs/local-checks.md describes.
 package repocheck
 
 import (
