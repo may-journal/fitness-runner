@@ -63,6 +63,8 @@ Run checks:
       Turns local-branch, the engine's own check, off, so a run uses only installed checks; it comes first.
   fitness --policy=external --checks=<name,name>
       Select the checks a command line names: with --policy=external, a run runs exactly the checks --checks lists.
+  fitness --require=<name,name>
+      Require fails the run when a named check cannot judge, where any other check shows info.
 
 Commands:
   fitness llms

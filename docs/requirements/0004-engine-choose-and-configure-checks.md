@@ -38,3 +38,7 @@ checks
   - Given Developer has a workflow job with a long timeout
     - When `workflow-timeouts` runs
       - Then it passes only a timeout that cites its observed maximum
+- 0004.7
+  - Given Developer names a check required, in `requiredChecks` or with `--require`
+    - When that check cannot judge
+      - Then the run is red, naming the check, while other checks still show info

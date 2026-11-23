@@ -326,3 +326,51 @@ func Test0004_6(t *testing.T) {
 		}},
 	}.run(t)
 }
+
+func Test0004_7(t *testing.T) {
+	cases{
+		{"a required check that cannot judge, named in the config or on the command line", func(t *testing.T) {
+			t.Parallel()
+			out, code := fitness(t, example(t, "happyRepo", cannotJudge("")), nil, "--all")
+			sees(t, out, code, 0, "check ended without a result (exit status 3)", "1 info")
+			for _, run := range []struct {
+				config string
+				args   []string
+			}{
+				{`, "requiredChecks": ["house-rule"]`, []string{"--all"}},
+				{"", []string{"--require=house-rule", "--all"}},
+				{`, "requiredChecks": ["cspell"]`, []string{"--require=house-rule,cspell", "--all"}},
+			} {
+				out, code := fitness(t, example(t, "happyRepo", cannotJudge(run.config)), nil, run.args...)
+				sees(t, out, code, 1, "required check could not judge, so the run fails", "check ended without a result (exit status 3)", "1 failed")
+				if !strings.Contains(row(out, "house-rule"), "failed") {
+					t.Errorf("a required check that cannot judge must show failed, got row %q", row(out, "house-rule"))
+				}
+			}
+		}},
+		{"a required name that is no check, from either source", func(t *testing.T) {
+			t.Parallel()
+			out, code := fitness(t, example(t, "happyRepo", cannotJudge(`, "requiredChecks": ["no-such-check"]`)), nil, "--all")
+			sees(t, out, code, 1, `requiredChecks: unknown or empty check "no-such-check"; the known checks are `, "house-rule")
+			out, code = fitness(t, example(t, "happyRepo", nil), nil, "--require=no-such-check", "--all")
+			sees(t, out, code, 1, `--require: unknown or empty check "no-such-check"; the known checks are `, "cspell")
+		}},
+		{"a required check the run leaves out or the config turns off", func(t *testing.T) {
+			t.Parallel()
+			out, code := fitness(t, example(t, "happyRepo", nil), nil, "--policy=external", "--checks=markdown-links", "--require=cspell")
+			sees(t, out, code, 1, "--require names cspell, which this run leaves out")
+			config := `{"policy": "external", "disabledChecks": ["cspell"], "requiredChecks": ["cspell"]}` + "\n"
+			out, code = fitness(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": config}), nil, "--all")
+			sees(t, out, code, 1, "requiredChecks names cspell, which disabledChecks turns off")
+		}},
+	}.run(t)
+}
+
+// cannotJudge is a repo whose local check house-rule exits 3 without a
+// result, with more appended to its config's keys.
+func cannotJudge(more string) map[string]string {
+	return map[string]string{
+		".fitnessrc.json":                 `{"localChecks": "checks"` + more + "}\n",
+		"checks/fitness-check-house-rule": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"house-rule\"}'; exit 0; }\nexit 3\n",
+	}
+}

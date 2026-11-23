@@ -20,6 +20,9 @@ type Options struct {
 	// Checks are the check names --checks gives.
 	Checks               []string
 	policySet, checksSet bool
+	// Required are the check names --require gives.
+	Required    []string
+	requiredSet bool
 }
 
 // Parse removes policy options before the legacy single-check parser runs.
@@ -45,6 +48,8 @@ func (o *Options) consume(arg string) (bool, error) {
 		return true, o.setPolicy(value, found)
 	case "--checks":
 		return true, o.setChecks(value, found)
+	case "--require":
+		return true, o.setRequired(value, found)
 	default:
 		return false, nil
 	}
@@ -64,6 +69,37 @@ func (o *Options) setChecks(value string, found bool) error {
 	}
 	o.Checks, o.checksSet = strings.Split(value, ","), true
 	return nil
+}
+
+func (o *Options) setRequired(value string, found bool) error {
+	if !found || o.requiredSet {
+		return fmt.Errorf("use --require=name,name once")
+	}
+	o.Required, o.requiredSet = strings.Split(value, ","), true
+	return nil
+}
+
+// Require fails the run when a named check cannot judge, where any other
+// check shows info. A name of the config's list or --require that known lacks
+// is an error naming its source and the known names.
+//
+//fitness:usage --require=<name,name>
+func (o Options) Require(configured, known []string) ([]string, error) {
+	var names []string
+	for _, source := range []struct {
+		from  string
+		names []string
+	}{{"requiredChecks", configured}, {"--require", o.Required}} {
+		for _, name := range source.names {
+			if !slices.Contains(known, name) {
+				return nil, fmt.Errorf("%s: unknown or empty check %q; the known checks are %s", source.from, name, strings.Join(known, ", "))
+			}
+			if !slices.Contains(names, name) {
+				names = append(names, name)
+			}
+		}
+	}
+	return names, nil
 }
 
 func validPolicy(policy string) error {

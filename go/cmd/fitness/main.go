@@ -147,6 +147,9 @@ type resolved struct {
 	// pending marks a stand-in for a check not fetched yet, whose desc
 	// holds only the fields the release index copies.
 	pending bool
+	// required makes the check's internal error fail the run, as
+	// requiredChecks or --require asked.
+	required bool
 }
 
 // outcome is one finished check, in dispatch order.
@@ -644,16 +647,27 @@ func rowFor(c resolved, o outcome, hint string) render.Row {
 	} else if o.timedOut {
 		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms, Errors: timedOutErrors(c, o, hint)}
 	} else if note, internal := internalNote(o); internal {
-		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: appendNote(o.res.Info, note)}
+		row = internalRow(c, o, note)
 	}
 	row.Info = appendNote(row.Info, c.describeErr)
-	return promptRow(row, o)
+	return promptRow(row, o, c.required)
+}
+
+// internalRow is the row of a check that could not judge: info, or a
+// failure when the check is required.
+func internalRow(c resolved, o outcome, note string) render.Row {
+	notes := appendNote(o.res.Info, note)
+	if c.required {
+		return render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms, Errors: append([]string{"required check could not judge, so the run fails"}, notes...)}
+	}
+	return render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: notes}
 }
 
 // promptRow makes an info row naming the remote when git or ssh refused to
-// ask for a password.
-func promptRow(row render.Row, o outcome) render.Row {
-	if row.Ok && len(row.Info) == 0 {
+// ask for a password. A required check keeps its row, so a refused prompt
+// still fails it.
+func promptRow(row render.Row, o outcome, required bool) render.Row {
+	if required || row.Ok && len(row.Info) == 0 {
 		return row
 	}
 	said := strings.Join(append(append([]string{o.stderr.text()}, row.Errors...), row.Info...), "\n")

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -29,7 +30,53 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 	if err == nil {
 		err = newEnough(checks)
 	}
-	return checks, passthrough, err
+	return checks, passthrough, markRequired(checks, cfg, options, err)
+}
+
+// markRequired marks each check that requiredChecks or --require names, so
+// its internal error fails the run. It returns failed, else an error for a
+// name that is no check.
+func markRequired(checks []resolved, cfg *conf.Config, options selection.Options, failed error) error {
+	if failed != nil {
+		return failed
+	}
+	var configured []string
+	if cfg != nil {
+		configured = cfg.RequiredChecks
+	}
+	names, err := options.Require(configured, selectableChecks())
+	for i := range checks {
+		checks[i].required = slices.Contains(names, checks[i].name)
+	}
+	if err != nil {
+		return err
+	}
+	return errors.Join(outsideRun(options.Required, checks), turnedOffRequired(cfg))
+}
+
+// outsideRun is an error for a check --require names that the run leaves
+// out, since it could never prove that check ran.
+func outsideRun(flagged []string, checks []resolved) error {
+	for _, name := range flagged {
+		if !slices.ContainsFunc(checks, func(c resolved) bool { return c.name == name }) {
+			return fmt.Errorf("--require names %s, which this run leaves out; add it to the run or drop it from --require", name)
+		}
+	}
+	return nil
+}
+
+// turnedOffRequired is an error for a check that requiredChecks names and
+// disabledChecks turns off.
+func turnedOffRequired(cfg *conf.Config) error {
+	if cfg == nil {
+		return nil
+	}
+	for _, name := range cfg.RequiredChecks {
+		if slices.Contains(cfg.DisabledChecks, name) {
+			return fmt.Errorf("requiredChecks names %s, which disabledChecks turns off; remove it from one of them", name)
+		}
+	}
+	return nil
 }
 
 // commitChecks excludes branch metadata from a pre-commit run, and also
