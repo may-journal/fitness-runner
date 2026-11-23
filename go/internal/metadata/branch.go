@@ -111,11 +111,16 @@ func judgeOtherPlans(ctx context.Context, others map[string][]int, clients repoC
 	return errs, checked
 }
 
-// readBranchChangelog gives pr the local tip's entry files, so pr-check
-// judges them before the push.
+// readBranchChangelog gives pr the local tip's entry files and commits, so
+// pr-check judges them before the push.
 func readBranchChangelog(ctx context.Context, root, tip string, pr *branchPR) error {
 	files, err := branchEntryFiles(ctx, root, tip, pr)
 	pr.EntryFiles = &files
+	if err != nil {
+		return err
+	}
+	commits, err := branchCommits(ctx, root, tip, pr)
+	pr.Commits = &commits
 	return err
 }
 

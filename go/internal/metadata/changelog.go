@@ -20,7 +20,57 @@ func changelogErrors(t target, gh aftereffect.Client) []string {
 		return []string{fmt.Sprintf("cannot read the %s/ files of PR #%d: %v; check gh authentication and network access, then retry", changelog.EntryDir, t.Number, err)}
 	}
 	errs := releasedErrors(files, gh)
-	return append(errs, oneEntryErrors(addedEntries(files), t.Body)...)
+	added, err := ownEntries(addedEntries(files), t, gh)
+	if err != nil {
+		return append(errs, fmt.Sprintf("cannot read the open PRs that PR #%d stacks on: %v; check gh authentication and network access, then retry", t.Number, err))
+	}
+	return append(errs, oneEntryErrors(added, t.Body)...)
+}
+
+// ownEntries drops the entry files a lower PR in the stack adds, which
+// GitHub lists as this PR's while both share a base.
+func ownEntries(added []aftereffect.FileChange, t target, gh aftereffect.Client) ([]aftereffect.FileChange, error) {
+	if len(added) < 2 {
+		return added, nil
+	}
+	lower, err := lowerPRs(t, gh)
+	for _, n := range lower {
+		var files []aftereffect.FileChange
+		if files, err = gh.DirFiles(n, changelog.EntryDir); err != nil {
+			break
+		}
+		theirs := addedEntries(files)
+		added = slices.DeleteFunc(added, func(f aftereffect.FileChange) bool {
+			return slices.ContainsFunc(theirs, func(o aftereffect.FileChange) bool { return o.Filename == f.Filename })
+		})
+	}
+	return added, err
+}
+
+// lowerPRs are the other open PRs whose head commit is one of this PR's
+// commits: the PRs it stacks on. The commits say so, never the description.
+func lowerPRs(t target, gh aftereffect.Client) ([]int, error) {
+	commits, err := prCommits(t, gh)
+	if err != nil {
+		return nil, err
+	}
+	heads, err := gh.OpenHeads()
+	var lower []int
+	for _, h := range heads {
+		if h.Number != t.Number && slices.Contains(commits, h.SHA) {
+			lower = append(lower, h.Number)
+		}
+	}
+	return lower, err
+}
+
+// prCommits is the local branch's commits when branch-check supplied them,
+// else the PR's as GitHub holds them.
+func prCommits(t target, gh aftereffect.Client) ([]string, error) {
+	if t.Commits != nil {
+		return *t.Commits, nil
+	}
+	return gh.PRCommits(t.Number)
 }
 
 // releasedErrors fails each entry file the PR edits or deletes that the newest
@@ -163,6 +213,16 @@ func branchEntryFiles(ctx context.Context, root, tip string, pr *branchPR) ([]af
 		}
 	}
 	return files, nil
+}
+
+// branchCommits are the commits the local tip holds past the PR's base
+// commit.
+func branchCommits(ctx context.Context, root, tip string, pr *branchPR) ([]string, error) {
+	out, err := exec.CommandContext(ctx, "git", "-C", root, "rev-list", pr.BaseSHA+".."+tip, "--").Output()
+	if err != nil {
+		return nil, fmt.Errorf("cannot list the commits from base commit %s: %w", pr.BaseSHA, err)
+	}
+	return strings.Fields(string(out)), nil
 }
 
 // entryChange is the entry file one --name-status line names, with its

@@ -41,4 +41,4 @@ posted comments and bodies
 - 0006.7
   - Given Developer has a pull request
     - When pr-check judges its changelog entry
-      - Then it passes only one new entry file that the body links
+      - Then it passes only one new entry file of its own that the body links
