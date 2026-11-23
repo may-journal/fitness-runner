@@ -1,10 +1,5 @@
-// Package metadata shares GitHub judgments between local checks and Actions.
-//
-// Actions run pr-check, issue-check, plan-check, close-check, dupe-check and
-// comment-check on each event, while branch-check runs the same judgments
-// locally without posting anything.
-//
-//fitness:topic github
+// Package metadata shares GitHub judgments between local checks and Actions,
+// as go/docs/github.md describes.
 package metadata
 
 import (

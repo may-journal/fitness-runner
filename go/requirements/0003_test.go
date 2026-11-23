@@ -798,23 +798,19 @@ func Test0003_7(t *testing.T) {
 			out, code := fitness(t, example(t, "happyRepo", files), nil, "explain", "house-rule")
 			sees(t, out, code, 0, "# house-rule", "Note: --describe gave no metadata")
 		}},
-		{"a repo with fitness installed: each topic prints its title and the doc comments of its package, under `go/pkg` or `go/internal` and no other folder", func(t *testing.T) {
+		{"a repo with fitness installed: each topic prints its Markdown file in `go/docs`, and the list shows the sentence it opens with", func(t *testing.T) {
 			t.Parallel()
 			repo := example(t, "happyRepo", nil)
 			out, code := fitness(t, repo, nil, "docs")
 			sees(t, out, code, 0, "protocol", "config")
 			names := topicNames(out)
-			for _, want := range []string{"config", "coverage", "github", "hooks", "languages", "protocol"} {
+			for _, want := range []string{"config", "coverage", "github", "hooks", "languages", "local-checks", "protocol"} {
 				if !slices.Contains(names, want) {
 					t.Fatalf("fitness docs lists %q, not topic %q:\n%s", names, want, out)
 				}
 			}
 			for _, name := range names {
-				page, code := fitness(t, repo, nil, "docs", name)
-				sees(t, page, code, 0, "# "+name, "Package ")
-				if !docsFromTopics.MatchString(page) {
-					t.Errorf("topic %q does not print the doc comments of a package under go/pkg or go/internal:\n%s", name, page)
-				}
+				printsTopicFile(t, repo, out, name)
 			}
 		}},
 		{"asks for a topic that does not exist", func(t *testing.T) {

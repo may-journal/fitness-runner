@@ -41,7 +41,7 @@ runs
 - 0003.7
   - Given AI agent has fitness installed
     - When it runs `fitness list`, `explain`, `docs`, `llms` or `--help`
-      - Then the binary explains every command and check from the code's own comments
+      - Then the binary explains every command and check from the code's own comments, and each guide topic from its Markdown file
 - 0003.8
   - Given Developer has code with comments
     - When `fitness comments` or a check reads it

@@ -1,7 +1,4 @@
-// Package lang defines what a language module brings to a run and orders what
-// modules claim against what is installed or embedded.
-//
-//fitness:topic languages
+// Package lang defines language modules, as go/docs/languages.md describes.
 package lang
 
 import (

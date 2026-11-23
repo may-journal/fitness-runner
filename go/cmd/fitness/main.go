@@ -20,8 +20,8 @@
 // # Learn the rest
 //
 // `fitness list` names every check, `fitness explain <check>` says why one
-// exists and how to pass it, and `fitness docs` serves the guides. All of
-// them, and this page, come from the code's own doc comments.
+// exists and how to pass it, and `fitness docs` serves the guides. The guides
+// are Markdown in go/docs.
 package main
 
 import (
@@ -290,7 +290,7 @@ func init() {
 		// reads.
 		//fitness:usage explain <check> [--json]
 		"explain": runExplain,
-		// Lists the guide topics, or prints one, from the code's doc comments.
+		// Lists the guide topics, or prints one, from the Markdown in go/docs.
 		//fitness:usage docs [topic]
 		"docs": runDocs,
 		// Prints each check the engine runs itself, one per line, or runs

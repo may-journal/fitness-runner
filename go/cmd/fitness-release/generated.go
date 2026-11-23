@@ -21,7 +21,7 @@ const generatedCommand = "generated"
 // can outlast the handshake's budget.
 var generatedDescribe = checkkit.Describe{
 	Name:    "generated",
-	Summary: "Fails when a file `go generate` writes from doc comments is stale, or a check package has no doc comment.",
+	Summary: "Fails when a file `go generate` writes from doc comments or go/docs is stale, or a check package has no doc comment.",
 	Scope:   checkkit.ScopeFiles,
 }
 
@@ -61,9 +61,8 @@ func staleErrors(stale []string) []string {
 	return errs
 }
 
-// touchesInputs reports whether a run's changed files can change what the
-// generator writes: any Go file, or any file it writes. Nil changed files
-// mean an unscoped run, which judges everything.
+// touchesInputs reports whether a run's changed files touch a Go file, a
+// topic in go/docs or a generated file. Nil means an unscoped run.
 func touchesInputs(changed []string) bool {
 	if changed == nil {
 		return true

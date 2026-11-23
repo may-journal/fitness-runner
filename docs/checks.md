@@ -20,7 +20,7 @@ A scope, declared in the check's `checkkit.Describe`, says what it reads: `files
 
 `fitness explain <check>` prints the check's whole package doc comment, rendered as Markdown, and the `.fitnessrc.json` keys it reads. A config struct field tagged `check:"<name>"` names such a key, and its doc comment explains it. `--json` gives the name, summary, scope, stage, and body.
 
-`fitness docs` lists the guide topics, and `fitness docs <topic>` prints one. A topic is a package whose doc comment carries a `//fitness:topic <name>` line, such as `protocol` for `pkg/checkkit`. It prints that package's doc comment and its exported declarations, so the guide is the code's own.
+`fitness docs` lists the guide topics, and `fitness docs <topic>` prints one. Each topic is a Markdown file in [go/docs](../go/docs), such as `protocol.md`, which the binary embeds. Its first paragraph after the title is the one-sentence summary that the list shows.
 
 ## Every tracked file
 

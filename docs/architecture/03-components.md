@@ -16,7 +16,7 @@ C4Component
     }
 
     Container_Boundary(shared, "Shared internals") {
-        Component(kit, "8 checkkit protocol", "Go", "go/pkg, go/internal, go/check")
+        Component(kit, "8 checkkit protocol", "Go", "go/pkg, go/internal, go/check, go/docs")
     }
 
     Container_Boundary(tools, "Install, release and CI tools") {
@@ -89,7 +89,7 @@ Numbers on nodes and letters on arrows match the callout table.
 | 5   | Bounded goroutine pool; a stage's total running out kills each of its checks' process groups.            | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass, fail and info summary.                   |
 | 7   | `local-branch` (`go/cmd/fitness-check-local-branch`), the one check built into fitness. | The engine judges this check itself. |
-| 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers. The public `go/check` SDK wraps it for a repo's own Go checks. | One implementation shared by every check binary.            |
+| 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers. The public `go/check` SDK wraps it for a repo's own Go checks, and `go/docs` embeds the guide topics. | One implementation shared by every check binary.            |
 | 9   | An installed check execs the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
 | 11  | The installer, the release tool and `fitness-ci`, one static binary each.                               | Shipped beside the bundle or built by CI; not part of any run. |

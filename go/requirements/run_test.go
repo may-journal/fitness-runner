@@ -974,6 +974,30 @@ func opensWith(body, summary string) bool {
 	return strings.HasPrefix(plain, opening(summary)) && len(plain) > len(summary)+1
 }
 
+// printsTopicFile fails unless `fitness docs <name>` prints go/docs/<name>.md
+// titled with the name, and list, what `fitness docs` printed, shows its
+// opening.
+func printsTopicFile(t *testing.T, repo, list, name string) {
+	t.Helper()
+	file := repoFile(t, "go/docs/"+name+".md")
+	page, code := fitness(t, repo, nil, "docs", name)
+	if code != 0 || !strings.HasSuffix(page, "\n"+file) || !strings.HasPrefix(file, "# "+name+"\n") {
+		t.Errorf("fitness docs %s (exit %d) does not print go/docs/%s.md, title first:\n%s", name, code, name, page)
+	}
+	listsOpening(t, list, name, file)
+}
+
+// listsOpening fails unless list shows name with the first paragraph after
+// file's title, one sentence on one line.
+func listsOpening(t *testing.T, list, name, file string) {
+	t.Helper()
+	_, rest, _ := strings.Cut(file, "\n\n")
+	first, _, _ := strings.Cut(rest, "\n\n")
+	if sentence := strings.Join(strings.Fields(first), " "); !strings.Contains(list, sentence+"\n") || strings.Contains(sentence, ". ") {
+		t.Errorf("fitness docs does not list %s with the one sentence its file opens with, %q:\n%s", name, sentence, list)
+	}
+}
+
 // topicNames reads the topic names `fitness docs` lists: the first word of
 // each line after the installer's own lines.
 func topicNames(out string) []string {
@@ -985,10 +1009,6 @@ func topicNames(out string) []string {
 	}
 	return names
 }
-
-// docsFromTopics matches the line a topic page opens with, naming a package
-// under go/pkg or go/internal.
-var docsFromTopics = regexp.MustCompile(`From the doc comments of go/(pkg|internal)/`)
 
 // subcommands are the commands fitness runs besides checks.
 var subcommands = strings.Fields(`llms list explain docs check init hook boxes
