@@ -827,8 +827,11 @@ func Test0006_7(t *testing.T) {
 			repo, pr := entryCommits(t, nil, entryFileBody(own),
 				map[string]string{lower: entryFileText(entryFirst, "Feat: add one file.")})
 			stack := entryStack(t, repo, lower)
-			entryApply(t, repo, []map[string]string{{own: entryFileText(entryLater, "Test: cover the file.")}})
+			commit(t, repo, map[string]string{"notes.txt": "one line\n"}, "test(app): add notes")
 			out, code := entryActions(t, repo, entryFileBody(own), stack(t)...)
+			sees(t, out, code, 0, "Passed.")
+			entryApply(t, repo, []map[string]string{{own: entryFileText(entryLater, "Test: cover the file.")}})
+			out, code = entryActions(t, repo, entryFileBody(own), stack(t)...)
 			sees(t, out, code, 0, "Passed.")
 			local, localCode := entryLocal(t, repo, pr, stack(t)...)
 			sees(t, local, localCode, 0, "pr-check #1")

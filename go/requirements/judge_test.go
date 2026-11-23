@@ -285,7 +285,8 @@ func entryApply(t *testing.T, repo string, commits []map[string]string) {
 }
 
 // entryStack is GitHub's answers for PR 1 stacked on open PR 2, which ends
-// at repo's tip now and adds path.
+// at repo's tip now and adds path. Open PR 3 is a twin: it ends on PR 1's
+// head commit and lists the same files.
 func entryStack(t *testing.T, repo, path string) func(*testing.T) []response {
 	t.Helper()
 	lower := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
@@ -293,11 +294,13 @@ func entryStack(t *testing.T, repo, path string) func(*testing.T) []response {
 	mustDo(t, err)
 	return func(t *testing.T) []response {
 		t.Helper()
-		heads := `{"number":1,"sha":"` + strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD")) + `"}` + "\n" + `{"number":2,"sha":"` + lower + `"}` + "\n"
+		head := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
+		heads := `{"number":1,"sha":"` + head + `"}` + "\n" + `{"number":2,"sha":"` + lower + `"}` + "\n" + `{"number":3,"sha":"` + head + `"}` + "\n"
 		return []response{
 			{Match: []string{"sha: .head.sha", "repos/" + repoPR + "/pulls?state=open&per_page=100"}, Stdout: heads},
 			{Match: []string{"repos/" + repoPR + "/pulls/1/commits"}, Stdout: gitOutput(t, repo, "rev-list", "origin/main..HEAD")},
 			{Match: []string{"repos/" + repoPR + "/pulls/2/files"}, Stdout: string(added) + "\n"},
+			{Match: []string{"repos/" + repoPR + "/pulls/3/files"}, Stdout: entryFilesAnswer(t, repo)},
 		}
 	}
 }

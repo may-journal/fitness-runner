@@ -30,7 +30,7 @@ func changelogErrors(t target, gh aftereffect.Client) []string {
 // ownEntries drops the entry files a lower PR in the stack adds, which
 // GitHub lists as this PR's while both share a base.
 func ownEntries(added []aftereffect.FileChange, t target, gh aftereffect.Client) ([]aftereffect.FileChange, error) {
-	if len(added) < 2 {
+	if len(added) == 0 {
 		return added, nil
 	}
 	lower, err := lowerPRs(t, gh)
@@ -55,13 +55,27 @@ func lowerPRs(t target, gh aftereffect.Client) ([]int, error) {
 		return nil, err
 	}
 	heads, err := gh.OpenHeads()
+	if err != nil {
+		return nil, err
+	}
 	var lower []int
-	for _, h := range heads {
-		if h.Number != t.Number && slices.Contains(commits, h.SHA) {
+	for _, h := range withoutTwins(heads, t.Number) {
+		if slices.Contains(commits, h.SHA) {
 			lower = append(lower, h.Number)
 		}
 	}
-	return lower, err
+	return lower, nil
+}
+
+// withoutTwins drops PR n and each open PR that ends on n's head commit.
+// Such a twin is the same work, not a lower PR.
+func withoutTwins(heads []aftereffect.PRHead, n int) []aftereffect.PRHead {
+	own := slices.IndexFunc(heads, func(h aftereffect.PRHead) bool { return h.Number == n })
+	if own < 0 {
+		return heads
+	}
+	sha := heads[own].SHA
+	return slices.DeleteFunc(slices.Clone(heads), func(h aftereffect.PRHead) bool { return h.SHA == sha })
 }
 
 // prCommits is the local branch's commits when branch-check supplied them,
