@@ -21,7 +21,7 @@ const generatedCommand = "generated"
 // can outlast the handshake's budget.
 var generatedDescribe = checkkit.Describe{
 	Name:    "generated",
-	Summary: "Fails when a file `go generate` writes from doc comments or go/docs is stale, or a check package has no doc comment.",
+	Summary: "Fails when a file or region `go generate` writes is stale, or a Markdown file in go/docs lacks its title and summary.",
 	Scope:   checkkit.ScopeFiles,
 }
 

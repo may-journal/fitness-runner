@@ -174,7 +174,7 @@ Numbers on classes and letters on relationships match the callout table.
 | E   | The wrapper invokes the binary with cwd = root and the context env. | Check encapsulates its own tool calls. |
 | F   | The last non-empty stdout line parses as the Result; a crash or exit other than 0 or 1 becomes info, and a stop at a total fails. | Stray tool noise ahead of the JSON is tolerated. |
 | G   | Binaries read context from the environment via checkkit accessors. | No IPC; plain env vars work everywhere. |
-| H   | Every check delegates to `checkkit.Main`; the generated `checks.go` links the `Main` of `local-branch`, the engine's one check. | One protocol implementation, shared by every check. |
+| H   | Every check delegates to `checkkit.Main`; `checks.go` links the `Main` of `local-branch`, the engine's one check. | One protocol implementation, shared by every check. |
 | I   | The scaffolding runs the check it is given. | One entry point per check. |
 | J   | A check carries its describe metadata. | The handshake answer lives beside the run function. |
 | K   | The run function returns the Result the scaffolding emits. | Uniform shapes, always non-nil error arrays. |

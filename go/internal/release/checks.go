@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"go/format"
 	"io/fs"
 	"maps"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -15,12 +15,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/docs"
 )
 
-// checksFile links local-branch into the fitness binary, relative to
-// the repository root.
-const checksFile = "go/cmd/fitness/checks.go"
-
 // WriteChecks rewrites every file Generated returns, so no one keeps the
-// generated Go files, llms page and README command list by hand.
+// generated Go file, the marked regions and llms.txt by hand.
 func (c Config) WriteChecks() error {
 	files, err := c.Generated()
 	if err != nil {
@@ -63,8 +59,8 @@ func (c Config) differs(path string, want []byte) (bool, error) {
 	return !bytes.Equal(got, want), nil
 }
 
-// Generated returns each file the generator writes, by repository path, read
-// from the check folders and their Go doc comments.
+// Generated returns each file the generator writes, by repository path. It
+// puts the code's own facts in marked regions of Markdown and in usage.go.
 func (c Config) Generated() (map[string][]byte, error) {
 	in, err := c.readSources()
 	if err != nil {
@@ -73,70 +69,79 @@ func (c Config) Generated() (map[string][]byte, error) {
 	return c.render(in)
 }
 
-// sources is what the generator reads from the code.
+// sources is what the generator reads: the code's facts, and the Markdown
+// whose summaries the lists repeat.
 type sources struct {
-	localBranch checkDoc
-	topics      []docs.Topic
-	usage       usageDoc
+	topics, runner []docs.Topic
+	usage          usageDoc
+	configKeys     []string
 }
 
-// readSources reads the local-branch package, the topics in go/docs, and the
-// documented command line.
+// readSources reads the topics and runner pages in go/docs, the documented
+// command line, and the config file's top-level keys.
 func (c Config) readSources() (s sources, err error) {
-	if s.localBranch, err = c.localBranchDoc(); err != nil {
-		return s, err
-	}
-	if s.topics, err = docs.Read(os.DirFS(filepath.Join(c.Root, docsFolder))); err != nil {
-		return s, err
-	}
-	s.usage, err = c.usage()
-	return s, err
+	folder := os.DirFS(filepath.Join(c.Root, filepath.FromSlash(docsFolder)))
+	linked := c.onlyLocalBranch()
+	s.topics, err = docs.Read(folder, ".")
+	runner, runnerErr := docs.Read(folder, docs.RunnerFolder)
+	s.runner, runnerErr = runner, errors.Join(runnerErr, hasPages(runner))
+	var usageErr, keysErr error
+	s.usage, usageErr = c.usage()
+	s.configKeys, keysErr = c.configKeys()
+	return s, errors.Join(linked, err, runnerErr, usageErr, keysErr)
 }
 
-// render lays out every generated file, meaning the Go sources, the llms
-// page, and the README command list.
+// render lays out every generated file: usage.go, the marked regions, and
+// llms.txt, a copy of the llms page.
 func (c Config) render(s sources) (map[string][]byte, error) {
-	page := llmsPage(s.usage, s.localBranch, s.topics)
-	checks, checksErr := checksSource(s.localBranch)
-	usage, usageErr := usageSource(s.usage, page)
-	if err := errors.Join(checksErr, usageErr); err != nil {
+	usage, err := usageSource(s.usage)
+	checks := checkList(s.runner)
+	page, pageErr := c.withRegions(llmsPage, []region{
+		{runMarker, usageSourceNote, entryList(s.usage.Runner)},
+		{commandsMarker, usageSourceNote, entryList(s.usage.Commands)},
+		{checksMarker, checksSourceNote, checks},
+		{topicsMarker, "the Markdown files in go/docs", topicList(s.topics)},
+	})
+	readme, readmeErr := c.withRegions(readmeFile, []region{
+		{usageMarker, usageSourceNote, usageBlock(s.usage)},
+		{configMarker, "the json tags of Config in go/pkg/conf/conf.go", keyList(s.configKeys)},
+	})
+	checksDoc, checksErr := c.withRegions(checksDocFile, []region{{checksMarker, checksSourceNote, checks}})
+	if err := errors.Join(err, pageErr, readmeErr, checksErr); err != nil {
 		return nil, err
 	}
-	readme, err := c.withRegion(readmeFile, usageMarker, "the usage comments in go/cmd/fitness and go/internal/selection", usageBlock(s.usage))
-	if err != nil {
-		return nil, err
-	}
-	return map[string][]byte{checksFile: checks, usageFile: usage, llmsFile: []byte(page), readmeFile: readme}, nil
+	return map[string][]byte{usageFile: usage, llmsPage: page, llmsFile: page, readmeFile: readme, checksDocFile: checksDoc}, nil
 }
 
-// docsFolder holds the `fitness docs` topics as Markdown, relative to the
-// repository root.
+// docsFolder holds the runner's Markdown, relative to the repository root.
 const docsFolder = "go/docs"
+
+// llmsPage is the page `fitness llms` prints, which llms.txt copies,
+// relative to the repository root.
+var llmsPage = path.Join(docsFolder, docs.RunnerFolder, "fitness.md")
+
+// checksDocFile lists the checks the engine runs itself, among other notes
+// on checks, relative to the repository root.
+const checksDocFile = "docs/checks.md"
+
+// The markers of the regions the generator writes.
+const (
+	runMarker      = "fitness run"
+	commandsMarker = "fitness commands"
+	checksMarker   = "fitness checks"
+	topicsMarker   = "fitness topics"
+	configMarker   = "fitness config"
+)
+
+// usageSourceNote and checksSourceNote name where a region's facts come from.
+const (
+	usageSourceNote  = "the usage comments in go/cmd/fitness and go/internal/selection"
+	checksSourceNote = "the check folders under go/cmd and go/docs/runner"
+)
 
 // localBranchFolder is the package of local-branch, the one check the
 // engine runs itself, relative to the repository root.
 const localBranchFolder = "go/cmd/fitness-check-local-branch"
-
-// localBranchDoc reads the local-branch package, with the config keys it
-// reads after its doc comment. Keys tagged for any other check belong to a
-// fitness-checks check, whose README documents them.
-func (c Config) localBranchDoc() (checkDoc, error) {
-	if err := c.onlyLocalBranch(); err != nil {
-		return checkDoc{}, err
-	}
-	d, err := readCheckDoc(filepath.Join(c.Root, filepath.FromSlash(localBranchFolder)))
-	if err != nil {
-		return d, err
-	}
-	keys, err := c.configKeys()
-	if err != nil {
-		return d, err
-	}
-	if config := configMarkdown(keys[d.Name]); config != "" {
-		d.Body += "\n" + config
-	}
-	return d, nil
-}
 
 // onlyLocalBranch fails any check package under go/cmd beside local-branch,
 // which the engine would never link: each other check lives in
@@ -154,25 +159,44 @@ func (c Config) onlyLocalBranch() error {
 	return nil
 }
 
-// checksSource lays out the one engine file that links a check package:
-// local-branch's entry point, its summary, and its explanation.
-func checksSource(d checkDoc) ([]byte, error) {
-	return format.Source([]byte(fmt.Sprintf("// Code generated by `fitness-release checks`; DO NOT EDIT.\n\n"+
-		"package main\n\n"+
-		"import localBranchCheck \"github.com/may-journal/fitness-runner/%s\"\n\n"+
-		"// localBranchMain is local-branch's entry point, whose describe metadata\n"+
-		"// the engine runs its own judgment under.\n"+
-		"var localBranchMain = localBranchCheck.Main\n\n"+
-		"// localBranchSummary is the first sentence of local-branch's package doc\n"+
-		"// comment.\n"+
-		"const localBranchSummary = %q\n\n"+
-		"// localBranchDoc is local-branch's package doc comment and the config keys\n"+
-		"// it reads, as Markdown.\n"+
-		"const localBranchDoc = %q\n", localBranchFolder, d.Summary, d.Body)))
+// checkList lists each check the engine runs itself with the summary its
+// page in go/docs/runner opens with.
+func checkList(runner []docs.Topic) string {
+	var b strings.Builder
+	for _, t := range runner {
+		if "go/cmd/fitness-check-"+t.Name == localBranchFolder {
+			fmt.Fprintf(&b, "- `%s`: %s\n", t.Name, t.Summary)
+		}
+	}
+	return b.String()
 }
 
-// Input reports whether a changed path can change the generator's output. It
-// can when the generator reads the path, a Go source or topic, or writes it.
+// topicList lists each `fitness docs` topic with its summary.
+func topicList(topics []docs.Topic) string {
+	var b strings.Builder
+	for _, t := range topics {
+		fmt.Fprintf(&b, "- `fitness docs %s`: %s\n", t.Name, t.Summary)
+	}
+	return b.String()
+}
+
+// Input reports whether a changed path can change the generator's output:
+// a Go source, Markdown in go/docs, or a file it writes.
 func Input(path string) bool {
-	return strings.HasSuffix(path, ".go") || path == readmeFile || strings.HasPrefix(path, docsFolder+"/")
+	written := []string{readmeFile, llmsFile, checksDocFile}
+	return strings.HasSuffix(path, ".go") || strings.HasPrefix(path, docsFolder+"/") || slices.Contains(written, path)
+}
+
+// runnerPages are the pages the binary reads from go/docs/runner by name.
+var runnerPages = []string{"fitness", "local-branch"}
+
+// hasPages fails when a page the binary reads is missing from runner.
+func hasPages(runner []docs.Topic) error {
+	var errs []error
+	for _, name := range runnerPages {
+		if !slices.ContainsFunc(runner, func(t docs.Topic) bool { return t.Name == name }) {
+			errs = append(errs, fmt.Errorf("go/docs/runner/%s.md is missing; the fitness binary reads it", name))
+		}
+	}
+	return errors.Join(errs...)
 }

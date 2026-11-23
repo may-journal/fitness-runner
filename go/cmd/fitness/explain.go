@@ -137,7 +137,7 @@ func knownChecks() []string {
 	return names
 }
 
-// explainCheck describes the check from its README, generated docs, or
+// explainCheck describes the check from its README, its Markdown in go/docs, or
 // handshake summary. A failed handshake or an unmet minFitness returns a note.
 func explainCheck(name string) (explained, error) {
 	checks, err := resolveList([]string{name})
@@ -145,7 +145,7 @@ func explainCheck(name string) (explained, error) {
 		return explained{}, err
 	}
 	c := checks[0]
-	body := localBranchDoc
+	body := localBranchDoc.Prose()
 	if name != localBranch || replaced(name) {
 		body = cmp.Or(repocheck.Doc(localBins[name]), orDash(c.desc.Summary)+"\n")
 	}

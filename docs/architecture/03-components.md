@@ -107,7 +107,7 @@ Numbers on nodes and letters on arrows match the callout table.
 | J   | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
 | K   | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
 | L   | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
-| M   | Entry links local-branch through the generated `checks.go` and runs it under that program name.        | The binary dispatches on argv[0] or `fitness check local-branch`. |
+| M   | Entry links local-branch through `checks.go` and runs it under that program name.        | The binary dispatches on argv[0] or `fitness check local-branch`. |
 | N   | The pool runs each repo check as its own process, as it runs an installed one. | One execution model for every check. |
 | O   | A Go repo check builds on checkkit through the public SDK. | The protocol lives once. |
 | P   | Pool starts each installed check's own program, with `--root` and env context. | Installed checks ship and version apart from the engine. |

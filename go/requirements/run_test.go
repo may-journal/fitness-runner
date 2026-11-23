@@ -981,7 +981,7 @@ func printsTopicFile(t *testing.T, repo, list, name string) {
 	t.Helper()
 	file := repoFile(t, "go/docs/"+name+".md")
 	page, code := fitness(t, repo, nil, "docs", name)
-	if code != 0 || !strings.HasSuffix(page, "\n"+file) || !strings.HasPrefix(file, "# "+name+"\n") {
+	if code != 0 || !strings.HasSuffix("\n"+page, "\n"+file) || !strings.HasPrefix(file, "# "+name+"\n") {
 		t.Errorf("fitness docs %s (exit %d) does not print go/docs/%s.md, title first:\n%s", name, code, name, page)
 	}
 	listsOpening(t, list, name, file)
