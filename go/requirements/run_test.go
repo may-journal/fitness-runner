@@ -1010,6 +1010,97 @@ func topicNames(out string) []string {
 	return names
 }
 
+// rebuildDocs runs the candidate fitness-release's generated check on the
+// checkout at root. It rebuilds each generated file and region, and compares.
+func rebuildDocs(t *testing.T, root string) (string, int) {
+	t.Helper()
+	cmd := exec.Command(releaseTool(t), "generated", "--root", root)
+	cmd.Env = userEnv()
+	out, _ := cmd.CombinedOutput()
+	return string(out), cmd.ProcessState.ExitCode()
+}
+
+// docsSources copies what the docs generator reads and writes from this
+// checkout into a new folder, which it returns.
+func docsSources(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	patterns := []string{"go/cmd/fitness/*.go", "go/cmd/fitness-check-*/*.go", "go/internal/selection/*.go", "go/pkg/conf/conf.go",
+		"go/docs/*.md", "go/docs/runner/*.md", "README.md", "docs/checks.md", "llms.txt", "fitness/generated/check"}
+	files := map[string]string{}
+	for _, pattern := range patterns {
+		paths, err := filepath.Glob(filepath.Join("..", "..", filepath.FromSlash(pattern)))
+		mustDo(t, err)
+		for _, path := range paths {
+			rel, _ := filepath.Rel(filepath.Join("..", ".."), path)
+			files[filepath.ToSlash(rel)] = repoFile(t, filepath.ToSlash(rel))
+		}
+	}
+	write(t, root, files)
+	return root
+}
+
+// editedMarkdown is the Markdown of this checkout that people edit: the
+// README, docs and go/docs, without the regions the generator writes.
+func editedMarkdown(t *testing.T) string {
+	t.Helper()
+	var b strings.Builder
+	for _, pattern := range []string{"README.md", "docs/*.md", "docs/*/*.md", "go/docs/*.md", "go/docs/runner/*.md"} {
+		paths, err := filepath.Glob(filepath.Join("..", "..", filepath.FromSlash(pattern)))
+		mustDo(t, err)
+		for _, path := range paths {
+			data, err := os.ReadFile(path)
+			mustDo(t, err)
+			b.WriteString(withoutRegions(string(data)))
+		}
+	}
+	return b.String()
+}
+
+// withoutRegions drops each region the generator writes from a Markdown
+// text, markers included.
+func withoutRegions(text string) string {
+	for {
+		before, rest, found := strings.Cut(text, "<!-- begin ")
+		_, after, closed := strings.Cut(rest, "<!-- end ")
+		if !found || !closed {
+			return text
+		}
+		_, after, _ = strings.Cut(after, "-->")
+		text = before + after
+	}
+}
+
+// helpCommands are the subcommand names `fitness --help` lists under
+// Commands: the first word after `fitness` on each form line.
+func helpCommands(help string) []string {
+	_, commands, _ := strings.Cut(help, "\nCommands:\n")
+	var names []string
+	for _, line := range strings.Split(commands, "\n") {
+		if form, ok := strings.CutPrefix(line, "  fitness "); ok && !slices.Contains(names, strings.Fields(form)[0]) {
+			names = append(names, strings.Fields(form)[0])
+		}
+	}
+	return names
+}
+
+// readmeConfigKeys are the top-level config keys the README's generated
+// region lists, which the generator reads from the code.
+func readmeConfigKeys(t *testing.T) []string {
+	t.Helper()
+	_, region, _ := strings.Cut(repoFile(t, "README.md"), "<!-- begin fitness config -->")
+	region, _, _ = strings.Cut(region, "<!-- end fitness config -->")
+	keys := regexp.MustCompile("`([A-Za-z]+)`").FindAllStringSubmatch(region, -1)
+	if len(keys) == 0 {
+		t.Fatalf("the README lists no config keys:\n%s", region)
+	}
+	names := make([]string, len(keys))
+	for i, key := range keys {
+		names[i] = key[1]
+	}
+	return names
+}
+
 // subcommands are the commands fitness runs besides checks.
 var subcommands = strings.Fields(`llms list explain docs check init hook boxes
 strip-front-matter branch-check pr-check issue-check plan-check close-check
@@ -1191,4 +1282,16 @@ func bundlePaths(t *testing.T) string {
 	}
 	write(t, bundle, programs)
 	return bundle
+}
+
+// unnamed are the names text never writes whole after opening, such as
+// "`fitness <name>" and then a space or backtick.
+func unnamed(text, opening string, names []string) []string {
+	var missing []string
+	for _, name := range names {
+		if !regexp.MustCompile(regexp.QuoteMeta(opening+name) + "[ `]").MatchString(text) {
+			missing = append(missing, name)
+		}
+	}
+	return missing
 }

@@ -41,7 +41,7 @@ runs
 - 0003.7
   - Given AI agent has fitness installed
     - When it runs `fitness list`, `explain`, `docs`, `llms` or `--help`
-      - Then the binary explains every command from the code's own comments, and each page, guide topic and its own check from Markdown
+      - Then the binary explains each command from its comment, and each page, topic and its own check from the Markdown in go/docs
 - 0003.8
   - Given Developer has code with comments
     - When `fitness comments` or a check reads it

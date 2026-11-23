@@ -27,7 +27,7 @@ The full list of installable checks is the [fitness-checks cmd folder](https://g
 
 ## Explain a check
 
-`fitness explain <check>` prints the check's whole package doc comment, rendered as Markdown, and the `.fitnessrc.json` keys it reads. A config struct field tagged `check:"<name>"` names such a key, and its doc comment explains it. `--json` gives the name, summary, scope, stage, and body.
+`fitness explain <check>` prints the check's documentation and the `.fitnessrc.json` keys its `--describe` declares. The engine's own check reads it from [go/docs/runner](../go/docs/runner), and a local check from its README. Any other check gives its summary. `--json` gives the name, summary, scope, stage, and body.
 
 `fitness docs` lists the guide topics, and `fitness docs <topic>` prints one. Each topic is a Markdown file in [go/docs](../go/docs), such as `protocol.md`, which the binary embeds. Its first paragraph after the title is the one-sentence summary that the list shows.
 

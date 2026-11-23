@@ -874,6 +874,30 @@ func Test0003_7(t *testing.T) {
 				t.Errorf("fitness --help (exit %d) does not print the README's command list:\n%s\nREADME:\n%s", code, out, list)
 			}
 		}},
+		{"a fitness checkout: rebuilding llms.txt and every generated region from the code and `go/docs` changes no committed file", func(t *testing.T) {
+			t.Parallel()
+			out, code := rebuildDocs(t, filepath.Join("..", ".."))
+			sees(t, out, code, 0, `"ok":true`)
+		}},
+		{"a fitness checkout whose llms.txt was edited by hand and whose topic summary changed: the rebuild names each file that drifted", func(t *testing.T) {
+			t.Parallel()
+			root := docsSources(t)
+			write(t, root, map[string]string{
+				"llms.txt":         repoFile(t, "llms.txt") + "\nA line edited by hand.\n",
+				"go/docs/hooks.md": strings.Replace(repoFile(t, "go/docs/hooks.md"), "installs the canonical", "installs the shared", 1),
+			})
+			out, code := rebuildDocs(t, root)
+			sees(t, out, code, 1, "llms.txt: stale or edited by hand", "go/docs/runner/fitness.md: stale or edited by hand")
+		}},
+		{"a fitness checkout: every subcommand `fitness --help` lists and every key of `.fitnessrc.json` has a section in the Markdown people edit", func(t *testing.T) {
+			t.Parallel()
+			out, code := fitness(t, example(t, "happyRepo", nil), nil, "--help")
+			commands := unnamed(editedMarkdown(t), "`fitness ", helpCommands(out))
+			keys := unnamed(withoutRegions(repoFile(t, "go/docs/config.md")), "- `", readmeConfigKeys(t))
+			if code != 0 || len(commands) > 0 || len(keys) > 0 {
+				t.Errorf("fitness --help exit %d; no section in README.md, docs or go/docs names these subcommands %q, and go/docs/config.md lists no keys %q", code, commands, keys)
+			}
+		}},
 	}.run(t)
 }
 
