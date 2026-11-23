@@ -29,6 +29,9 @@ type Config struct {
 	// DisabledChecks names checks external policy leaves out and org policy
 	// refuses, as ADR 0009 describes.
 	DisabledChecks []string `json:"disabledChecks"`
+	// RequiredChecks names checks whose internal error fails the run instead
+	// of showing info, under either policy; `--require` adds to them.
+	RequiredChecks []string `json:"requiredChecks"`
 	// CheckVersions pins each check the repo uses to a release such as v1.2.3
 	// or a major such as v1; a "*" key pins all. Unset or empty, the repo uses
 	// every check at its current major.

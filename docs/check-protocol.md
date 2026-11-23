@@ -49,6 +49,18 @@ A check that cannot judge reports info. Causes include a panic, an error from `R
 
 Info rows show as `info` with an "N info" total. They never change the exit code, locally or in GitHub Actions. A printed result with `ok: false` still fails, whatever the exit code.
 
+## Required checks
+
+A CI job may need proof that a check really ran. A required check that cannot judge fails the run with exit 1, and its row shows `failed` with the cause. Every other check keeps reporting info.
+
+```json
+{ "requiredChecks": ["go-test", "cspell"] }
+```
+
+`--require=go-test,cspell` names them on the command line. Both sources merge as one set, under either policy. A name that is no known check fails setup, and the error lists the known names. A timeout already fails, and a check no file reaches still skips.
+
+`--require` naming a check the run leaves out fails setup, as does `requiredChecks` naming one that `disabledChecks` turns off. A password prompt that git or ssh refused fails a required check too.
+
 ## Environment errors
 
 Shared helpers in `go/pkg` mark an environment error with `checkkit.Internal`, so a check can report it as info. `checkkit.Exec` tells a tool that could not start or was killed by a signal from one that ran. A language module's tool runner also reports sandbox text that `checkkit.SandboxText` spots, such as `dial tcp`, the same way.

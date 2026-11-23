@@ -348,6 +348,7 @@ func withFetched(checks []resolved) []resolved {
 	out := make([]resolved, len(checks))
 	for i, c := range checks {
 		if r, ok := fetchedResolved[c.name]; ok && c.pending {
+			r.required = c.required
 			c = r
 		}
 		out[i] = c
