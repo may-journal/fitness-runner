@@ -25,7 +25,7 @@ runs
 - 0002.3
   - Given Developer has check programs installed
     - When fitness runs them
-      - Then it finds each, agrees its protocol, and names how to install a missing one
+      - Then it finds each, agrees its protocol, and names how to install any missing one
 - 0002.4
   - Given Developer has a repo pinning checks, none cached
     - When I run fitness on some files

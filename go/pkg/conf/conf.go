@@ -1,4 +1,4 @@
-// Package conf loads .fitnessrc.json, as go/docs/config.md describes.
+// Package conf loads the repository's .fitnessrc.json, giving each check a typed section for its own keys (go/docs/config.md).
 package conf
 
 import (

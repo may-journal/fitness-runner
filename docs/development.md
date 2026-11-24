@@ -19,9 +19,11 @@ See [docs/architecture-index.md](architecture-index.md) for the C4 model ([docs/
 
 ## Generated docs
 
-One command writes every file generated from the code: `go -C go generate ./cmd/fitness`. It writes `local-branch`'s summary and doc, the topics and the command line into `fitness`. It also writes the root `llms.txt` and the README's command list.
+People edit the runner's docs as Markdown in [go/docs](../go/docs), which the binary embeds. That holds the topics, the llms page, and the rule of `local-branch`. Only the code's own facts are generated, by one command: `go -C go generate ./cmd/fitness`.
 
-Edit the doc comment, never the generated file. A doc comment link to this repository uses its full GitHub URL, and the README links it relatively. The local [generated check](../fitness/generated/README.md) fails a generated file that is stale or edited by hand. Each subcommand needs a `//fitness:usage` line in its comment, which `fitness --help` prints, or generation fails.
+It writes the command line into `fitness`. It fills the marked regions that list the commands, the checks the engine runs itself, the topics and the config keys. Those regions sit in the llms page, the README and `docs/checks.md`, and `llms.txt` copies the llms page.
+
+Edit the Markdown or the usage comment, never a generated region. The local [generated check](../fitness/generated/README.md) fails a generated file that is stale or edited by hand. Each subcommand needs a `//fitness:usage` line in its comment, which `fitness --help` prints, or generation fails.
 
 ## Requirement tests
 

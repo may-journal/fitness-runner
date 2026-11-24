@@ -1,3 +1,8 @@
 # Files `go generate` writes from the code; their sources are checked.
-go/cmd/fitness/checks.go linguist-generated
-go/cmd/fitness/usage.go linguist-generated
+llms.txt linguist-generated text eol=lf
+go/cmd/fitness/usage.go linguist-generated text eol=lf
+# Files the generator writes into: its marker lines must match byte for byte,
+# so a Windows checkout keeps them LF.
+README.md text eol=lf
+docs/checks.md text eol=lf
+go/docs/runner/fitness.md text eol=lf

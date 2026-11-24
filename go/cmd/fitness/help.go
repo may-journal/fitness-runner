@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/docs"
 )
 
 // usageEntry is one documented form of the command line, read from its
@@ -45,6 +47,6 @@ func runLLMs(args []string) int {
 		fmt.Fprintln(os.Stderr, "fitness llms: takes no arguments")
 		return 2
 	}
-	fmt.Print(llmsPage)
+	fmt.Print(docs.Runner("fitness").Body)
 	return 0
 }

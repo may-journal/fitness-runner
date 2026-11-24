@@ -773,7 +773,7 @@ func Test0003_7(t *testing.T) {
 				sees(t, strings.ReplaceAll(out, `\`, ""), code, 0, "# "+check.Name, "Scope: "+check.Scope+" · Stage: "+check.Stage, opening(check.Summary))
 			}
 		}},
-		{"wants a check's documentation as data", func(t *testing.T) {
+		{"wants a check's documentation as data, the engine's own check from `go/docs/runner/local-branch.md`", func(t *testing.T) {
 			t.Parallel()
 			repo := example(t, "happyRepo", nil)
 			got := explainJSON(t, repo, "local-branch")
@@ -782,8 +782,8 @@ func Test0003_7(t *testing.T) {
 			if got != want || got.Scope == "" {
 				t.Errorf("fitness explain --json gave name %q, scope %q, summary %q; fitness list says %q", got.Name, got.Scope, got.Summary, summary)
 			}
-			if !opensWith(got.Body, summary) || !strings.Contains(got.Body, "## Usage") {
-				t.Errorf("the body does not open with the summary and go on to its usage:\n%s", got.Body)
+			if "# local-branch\n\n"+got.Body != repoFile(t, "go/docs/runner/local-branch.md") || !strings.Contains(got.Body, "## Usage") {
+				t.Errorf("the body is not go/docs/runner/local-branch.md after its title, with its usage:\n%s", got.Body)
 			}
 		}},
 		{"mistypes a check name", func(t *testing.T) {
@@ -823,11 +823,14 @@ func Test0003_7(t *testing.T) {
 			out, code := fitness(t, example(t, "happyRepo", nil), nil, "docs", "--json")
 			sees(t, out, code, 2, "name one topic, as `fitness docs [topic]`")
 		}},
-		{"a repo with fitness installed: the page explains fitness, its exit codes, every subcommand, the check the engine runs itself and every docs topic", func(t *testing.T) {
+		{"a repo with fitness installed: the page, which llms.txt copies from `go/docs/runner/fitness.md`, explains fitness, its exit codes, every subcommand, the check the engine runs itself, where every installable check is listed, and every docs topic", func(t *testing.T) {
 			t.Parallel()
 			repo := example(t, "happyRepo", nil)
 			page, code := fitness(t, repo, nil, "llms")
-			sees(t, page, code, 0, "# fitness", "## Exit codes", "## Commands", "## Checks", "## Topics")
+			sees(t, page, code, 0, "# fitness", "## Exit codes", "## Commands", "## Checks", "## Topics", "(https://github.com/may-journal/fitness-checks/tree/main/cmd)")
+			if source := repoFile(t, "go/docs/runner/fitness.md"); !strings.HasSuffix("\n"+page, "\n"+source) || repoFile(t, "llms.txt") != source {
+				t.Errorf("fitness llms and llms.txt do not both print go/docs/runner/fitness.md:\n%s", page)
+			}
 			for _, name := range subcommands {
 				sees(t, page, code, 0, "`fitness "+name)
 			}

@@ -1,27 +1,5 @@
-// Command fitness runs a repo's fitness checks: small programs that each
-// judge one rule, such as spelling, tests, or pull request shape. Each check
-// is its own program installed from fitness-checks, the engine judges
-// local-branch itself, and a repo may add local checks. Each check decides
-// whether it applies, so any repo runs the same suite with nothing to
-// configure.
-//
-// A run resolves the checks, runs them side by side under two totals, and
-// prints a table of results. Each is passed, failed, info, or skipped. Info never fails a run, and a check no file of the run reaches is skipped. With files staged it judges only those files; --all judges
-// every tracked file.
-//
-// # Exit codes
-//
-//   - 0: every check passed, or a command succeeded.
-//   - 1: a check found problems, or the run could not start, such as a bad
-//     config.
-//   - 2: a command got arguments it does not take, or explain or docs
-//     named an unknown check or topic.
-//
-// # Learn the rest
-//
-// `fitness list` names every check, `fitness explain <check>` says why one
-// exists and how to pass it, and `fitness docs` serves the guides. The guides
-// are Markdown in go/docs.
+// Command fitness runs a repo's fitness checks, as go/docs/runner/fitness.md
+// describes.
 package main
 
 import (
@@ -205,7 +183,7 @@ func runBuiltin(name string, args []string) int {
 		fmt.Fprintf(os.Stderr, "fitness: no built-in check %s; `fitness check --list` names it\n", name)
 		return 2
 	}
-	checkkit.Document(localBranchSummary)
+	checkkit.Document(localBranchDoc.Summary)
 	desc, described := checkkit.DescribeOf(localBranchMain)
 	if !described {
 		fmt.Fprintf(os.Stderr, "fitness: built-in check %s gave no describe metadata for the engine's judgment; reinstall fitness\n", name)
@@ -915,7 +893,7 @@ func describeBuiltin(name string, prog checkkit.Program) (resolved, bool) {
 	if !ok {
 		return resolved{}, false
 	}
-	desc.Summary = cmp.Or(desc.Summary, localBranchSummary)
+	desc.Summary = cmp.Or(desc.Summary, localBranchDoc.Summary)
 	return resolved{name: name, prog: prog, desc: desc}, true
 }
 

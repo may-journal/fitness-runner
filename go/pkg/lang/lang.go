@@ -1,4 +1,4 @@
-// Package lang defines language modules, as go/docs/languages.md describes.
+// Package lang defines language modules, which tell fitness how to detect a language and find its sources and tests (go/docs/languages.md).
 package lang
 
 import (

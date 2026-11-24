@@ -5,16 +5,12 @@ package release
 import (
 	"fmt"
 	"go/ast"
-	"go/doc"
 	"go/format"
 	"go/parser"
 	"go/token"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
-
-	"github.com/may-journal/fitness-runner/go/docs"
 )
 
 // usageDirective marks a comment that documents one form of the fitness
@@ -30,12 +26,10 @@ type usageEntry struct {
 	Summary string
 }
 
-// usageDoc is the documented command line: check-running forms, subcommands in
-// table order, and the runner's package doc comment.
+// usageDoc is the documented command line: check-running forms and
+// subcommands in table order.
 type usageDoc struct {
 	Runner, Commands []usageEntry
-	// Intro is the runner's package doc comment as Markdown.
-	Intro string
 }
 
 // usageSources are the packages whose comments document the command line,
@@ -64,8 +58,7 @@ func (u *usageDoc) read(dir string) error {
 		return err
 	}
 	for _, file := range files {
-		pkg := &doc.Package{Name: file.Name.Name}
-		if err := u.readFile(fset, pkg, file); err != nil {
+		if err := u.readFile(fset, file); err != nil {
 			return err
 		}
 	}
@@ -74,23 +67,20 @@ func (u *usageDoc) read(dir string) error {
 
 // readFile sorts a file's usage comments into subcommands, by their place
 // in the subcommands table, and forms that run checks.
-func (u *usageDoc) readFile(fset *token.FileSet, pkg *doc.Package, file *ast.File) error {
-	if pkg.Name == "main" && file.Doc != nil {
-		u.Intro = markdown(pkg, strings.Replace(file.Doc.Text(), "Command fitness ", "fitness ", 1))
-	}
-	inTable, err := u.readTable(fset, pkg, file)
+func (u *usageDoc) readFile(fset *token.FileSet, file *ast.File) error {
+	inTable, err := u.readTable(fset, file)
 	if err == nil {
-		u.readRunner(pkg, file, inTable)
+		u.readRunner(file, inTable)
 	}
 	return err
 }
 
 // readRunner adds each usage comment in file outside the subcommands
 // table: the forms that run checks.
-func (u *usageDoc) readRunner(pkg *doc.Package, file *ast.File, inTable map[*ast.CommentGroup]bool) {
+func (u *usageDoc) readRunner(file *ast.File, inTable map[*ast.CommentGroup]bool) {
 	names := declNames(file)
 	for _, group := range file.Comments {
-		if e, ok := usageComment(pkg, group, names); ok && !inTable[group] {
+		if e, ok := usageComment(group, names); ok && !inTable[group] {
 			u.Runner = append(u.Runner, e)
 		}
 	}
@@ -98,7 +88,7 @@ func (u *usageDoc) readRunner(pkg *doc.Package, file *ast.File, inTable map[*ast
 
 // readTable reads each subcommand table entry's comment in file, in table
 // order, and returns the comments it read.
-func (u *usageDoc) readTable(fset *token.FileSet, pkg *doc.Package, file *ast.File) (map[*ast.CommentGroup]bool, error) {
+func (u *usageDoc) readTable(fset *token.FileSet, file *ast.File) (map[*ast.CommentGroup]bool, error) {
 	inTable := map[*ast.CommentGroup]bool{}
 	table := subcommandTable(file)
 	if table == nil {
@@ -106,7 +96,7 @@ func (u *usageDoc) readTable(fset *token.FileSet, pkg *doc.Package, file *ast.Fi
 	}
 	comments := ast.NewCommentMap(fset, table, file.Comments)
 	for _, elt := range table.Elts {
-		e, err := tableEntry(pkg, elt.(*ast.KeyValueExpr), comments, inTable)
+		e, err := tableEntry(elt.(*ast.KeyValueExpr), comments, inTable)
 		if err != nil {
 			return nil, err
 		}
@@ -117,11 +107,11 @@ func (u *usageDoc) readTable(fset *token.FileSet, pkg *doc.Package, file *ast.Fi
 
 // tableEntry reads one subcommand's comment, which must carry a usage
 // directive for its name.
-func tableEntry(pkg *doc.Package, kv *ast.KeyValueExpr, comments ast.CommentMap, inTable map[*ast.CommentGroup]bool) (usageEntry, error) {
+func tableEntry(kv *ast.KeyValueExpr, comments ast.CommentMap, inTable map[*ast.CommentGroup]bool) (usageEntry, error) {
 	name := strings.Trim(kv.Key.(*ast.BasicLit).Value, `"`)
 	for _, group := range comments[kv] {
 		inTable[group] = true
-		if e, ok := usageComment(pkg, group, nil); ok && strings.HasPrefix(e.Synopses[0], name) {
+		if e, ok := usageComment(group, nil); ok && strings.HasPrefix(e.Synopses[0], name) {
 			return e, nil
 		}
 	}
@@ -161,7 +151,7 @@ func declNames(file *ast.File) map[string]bool {
 // usageComment reads a comment's usage directives and the first sentence
 // of its text, without the declared name it opens with. ok is false for a
 // comment without a directive.
-func usageComment(pkg *doc.Package, group *ast.CommentGroup, names map[string]bool) (e usageEntry, ok bool) {
+func usageComment(group *ast.CommentGroup, names map[string]bool) (e usageEntry, ok bool) {
 	for _, line := range group.List {
 		if rest, found := strings.CutPrefix(line.Text, usageDirective); found {
 			e.Synopses = append(e.Synopses, strings.TrimSpace(rest))
@@ -171,7 +161,7 @@ func usageComment(pkg *doc.Package, group *ast.CommentGroup, names map[string]bo
 	if first, rest, cut := strings.Cut(text, " "); cut && names[first] {
 		text = capitalize(rest)
 	}
-	e.Summary = pkg.Synopsis(text)
+	e.Summary = firstSentence(text)
 	return e, len(e.Synopses) > 0
 }
 
@@ -183,17 +173,15 @@ const usageFile = "go/cmd/fitness/usage.go"
 // also ships.
 const llmsFile = "llms.txt"
 
-// usageSource lays out the usage file: the forms that run checks, the
-// subcommands, and the llms page.
-func usageSource(u usageDoc, page string) ([]byte, error) {
+// usageSource lays out the usage file: the forms that run checks and the
+// subcommands.
+func usageSource(u usageDoc) ([]byte, error) {
 	return format.Source([]byte("// Code generated by `fitness-release checks`; DO NOT EDIT.\n\n" +
 		"package main\n\n" +
 		"// runnerUsage are the documented forms that run checks.\n" +
 		"var runnerUsage = " + entriesSource(u.Runner) + "\n\n" +
 		"// commandUsage are the documented subcommands, in table order.\n" +
-		"var commandUsage = " + entriesSource(u.Commands) + "\n\n" +
-		"// llmsPage is the page `fitness llms` prints and llms.txt holds.\n" +
-		"const llmsPage = " + strconv.Quote(page) + "\n"))
+		"var commandUsage = " + entriesSource(u.Commands) + "\n"))
 }
 
 // entriesSource writes entries as a Go slice literal.
@@ -204,33 +192,4 @@ func entriesSource(entries []usageEntry) string {
 		fmt.Fprintf(&b, "\t{synopses: %#v, summary: %q},\n", e.Synopses, e.Summary)
 	}
 	return b.String() + "}"
-}
-
-// llmsPage is one page teaching an AI the whole CLI: exit codes, commands,
-// local-branch, and docs topics.
-func llmsPage(u usageDoc, localBranch checkDoc, topics []docs.Topic) string {
-	var b strings.Builder
-	b.WriteString("# fitness\n\n" + u.Intro)
-	b.WriteString("\n## Run checks\n\n")
-	writeUsage(&b, u.Runner)
-	b.WriteString("\n## Commands\n\n")
-	writeUsage(&b, u.Commands)
-	b.WriteString("\n## Checks\n\n`fitness explain <check>` prints a check's whole documentation.\n\n")
-	fmt.Fprintf(&b, "- `%s`: %s\n", localBranch.Name, localBranch.Summary)
-	b.WriteString("\n## Topics\n\n")
-	for _, t := range topics {
-		fmt.Fprintf(&b, "- `fitness docs %s`: %s\n", t.Name, t.Summary)
-	}
-	return b.String()
-}
-
-// writeUsage lists each entry's forms and summary.
-func writeUsage(b *strings.Builder, entries []usageEntry) {
-	for _, e := range entries {
-		forms := make([]string, len(e.Synopses))
-		for i, s := range e.Synopses {
-			forms[i] = "`" + strings.TrimSpace("fitness "+s) + "`"
-		}
-		fmt.Fprintf(b, "- %s: %s\n", strings.Join(forms, " or "), e.Summary)
-	}
 }

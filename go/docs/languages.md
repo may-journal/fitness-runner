@@ -1,6 +1,6 @@
 # languages
 
-A language module brings its checks and tools to a run, and go/pkg/lang orders what modules claim against what is installed or embedded.
+A language module brings its checks and tools to a run, and go/pkg/lang orders what the modules claim.
 
 ## TestScanEnv
 

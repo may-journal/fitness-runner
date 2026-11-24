@@ -1,4 +1,4 @@
-// Package goal holds the coverage goal, as go/docs/coverage.md describes.
+// Package goal is the coverage goal every coverage check judges by; exact counts decide it, so a rounded total can fall short (go/docs/coverage.md).
 package goal
 
 import "strconv"

@@ -25,7 +25,7 @@ The bundle pass creates four archives. The tools pass embeds their hashes in fou
 | --- | --- |
 | `version` | Print the version from `version.txt`. |
 | `tag` | Print its root `v` tag. |
-| `checks` | Write every file generated from the code: `local-branch`'s summary and doc in `fitness`, `llms.txt` with the topics in `go/docs`, and the README command list. |
+| `checks` | Write the command line into `fitness`, the marked regions that list commands, checks, topics and config keys, and `llms.txt`. |
 | `bundle-hashes` | Print archive hashes for installer build flags. |
 | `assemble` | Gather GoReleaser outputs for native checks. |
 | `smoke` | Test built assets without public downloads. |
