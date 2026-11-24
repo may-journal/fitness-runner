@@ -6,6 +6,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"maps"
 	"os"
 	"os/exec"
@@ -1010,6 +1013,98 @@ func topicNames(out string) []string {
 	return names
 }
 
+// rebuildDocs runs the candidate fitness-release's generated check on the
+// checkout at root. It rebuilds each generated file and region, and compares.
+func rebuildDocs(t *testing.T, root string) (string, int) {
+	t.Helper()
+	cmd := exec.Command(releaseTool(t), "generated", "--root", root)
+	cmd.Env = userEnv()
+	out, _ := cmd.CombinedOutput()
+	return string(out), cmd.ProcessState.ExitCode()
+}
+
+// docsSources copies what the docs generator reads and writes from this
+// checkout into a new folder, which it returns.
+func docsSources(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	patterns := []string{"go/cmd/fitness/*.go", "go/cmd/fitness-check-*/*.go", "go/internal/selection/*.go", "go/pkg/conf/conf.go",
+		"go/docs/*.md", "go/docs/runner/*.md", "README.md", "docs/checks.md", "llms.txt", "fitness/generated/check"}
+	files := map[string]string{}
+	for _, pattern := range patterns {
+		paths, err := filepath.Glob(filepath.Join("..", "..", filepath.FromSlash(pattern)))
+		mustDo(t, err)
+		for _, path := range paths {
+			rel, _ := filepath.Rel(filepath.Join("..", ".."), path)
+			files[filepath.ToSlash(rel)] = repoFile(t, filepath.ToSlash(rel))
+		}
+	}
+	write(t, root, files)
+	return root
+}
+
+// editedMarkdown is the Markdown of this checkout that people edit: the
+// README, docs and go/docs, without the regions the generator writes.
+func editedMarkdown(t *testing.T) string {
+	t.Helper()
+	var b strings.Builder
+	for _, pattern := range []string{"README.md", "docs/*.md", "docs/*/*.md", "go/docs/*.md", "go/docs/runner/*.md"} {
+		paths, err := filepath.Glob(filepath.Join("..", "..", filepath.FromSlash(pattern)))
+		mustDo(t, err)
+		for _, path := range paths {
+			data, err := os.ReadFile(path)
+			mustDo(t, err)
+			b.WriteString(withoutRegions(string(data)))
+		}
+	}
+	return b.String()
+}
+
+// withoutRegions drops each region the generator writes from a Markdown
+// text, markers included.
+func withoutRegions(text string) string {
+	for {
+		before, rest, found := strings.Cut(text, "<!-- begin ")
+		_, after, closed := strings.Cut(rest, "<!-- end ")
+		if !found || !closed {
+			return text
+		}
+		_, after, _ = strings.Cut(after, "-->")
+		text = before + after
+	}
+}
+
+// helpCommands are the subcommand names `fitness --help` lists under
+// Commands: the first word after `fitness` on each form line.
+func helpCommands(help string) []string {
+	_, commands, _ := strings.Cut(help, "\nCommands:\n")
+	var names []string
+	for _, line := range strings.Split(commands, "\n") {
+		form, _ := strings.CutPrefix(line, "  fitness ")
+		if words := strings.Fields(form); strings.HasPrefix(line, "  fitness ") && len(words) > 0 && !slices.Contains(names, words[0]) {
+			names = append(names, words[0])
+		}
+	}
+	return names
+}
+
+// readmeConfigKeys are the top-level config keys the README's generated
+// region lists, which the generator reads from the code.
+func readmeConfigKeys(t *testing.T) []string {
+	t.Helper()
+	_, region, _ := strings.Cut(repoFile(t, "README.md"), "<!-- begin fitness config -->")
+	region, _, _ = strings.Cut(region, "<!-- end fitness config -->")
+	keys := regexp.MustCompile("`([A-Za-z]+)`").FindAllStringSubmatch(region, -1)
+	if len(keys) == 0 {
+		t.Fatalf("the README lists no config keys:\n%s", region)
+	}
+	names := make([]string, len(keys))
+	for i, key := range keys {
+		names[i] = key[1]
+	}
+	return names
+}
+
 // subcommands are the commands fitness runs besides checks.
 var subcommands = strings.Fields(`llms list explain docs check init hook boxes
 strip-front-matter branch-check pr-check issue-check plan-check close-check
@@ -1191,4 +1286,118 @@ func bundlePaths(t *testing.T) string {
 	}
 	write(t, bundle, programs)
 	return bundle
+}
+
+// unnamed are the names text never writes whole after opening, such as
+// "`fitness <name>" and then a space or backtick.
+func unnamed(text, opening string, names []string) []string {
+	var missing []string
+	for _, name := range names {
+		if !regexp.MustCompile(regexp.QuoteMeta(opening+name) + "[ `]").MatchString(text) {
+			missing = append(missing, name)
+		}
+	}
+	return missing
+}
+
+// undocumentedAPI are the exported declarations of go/pkg/checkkit, with
+// methods as "Type.Method", that no heading of go/docs/protocol.md names.
+func undocumentedAPI(t *testing.T) []string {
+	t.Helper()
+	pkgs, err := parser.ParseDir(token.NewFileSet(), filepath.Join("..", "pkg", "checkkit"), func(info os.FileInfo) bool {
+		return !strings.HasSuffix(info.Name(), "_test.go")
+	}, 0)
+	mustDo(t, err)
+	named := headingNames(repoFile(t, "go/docs/protocol.md"))
+	var missing []string
+	for _, name := range exportedNames(pkgs) {
+		if !named[name] {
+			missing = append(missing, name)
+		}
+	}
+	slices.Sort(missing)
+	return missing
+}
+
+// headingNames are the comma-separated names in each "## " heading of text.
+func headingNames(text string) map[string]bool {
+	named := map[string]bool{}
+	for _, heading := range regexp.MustCompile(`(?m)^## (.+)$`).FindAllStringSubmatch(text, -1) {
+		for _, name := range strings.Split(heading[1], ", ") {
+			named[name] = true
+		}
+	}
+	return named
+}
+
+// exportedNames are the exported names every declaration of pkgs introduces.
+func exportedNames(pkgs map[string]*ast.Package) []string {
+	var names []string
+	for _, pkg := range pkgs {
+		for _, file := range pkg.Files {
+			for _, decl := range file.Decls {
+				names = append(names, declaredNames(decl)...)
+			}
+		}
+	}
+	return names
+}
+
+// declaredNames are the exported names one declaration introduces, a method
+// as "Type.Method".
+func declaredNames(decl ast.Decl) []string {
+	switch d := decl.(type) {
+	case *ast.FuncDecl:
+		return funcName(d)
+	case *ast.GenDecl:
+		var names []string
+		for _, spec := range d.Specs {
+			names = append(names, specNames(spec)...)
+		}
+		return names
+	}
+	return nil
+}
+
+// funcName is the exported name of a function or method, if it has one.
+func funcName(d *ast.FuncDecl) []string {
+	if !d.Name.IsExported() {
+		return nil
+	}
+	if d.Recv == nil {
+		return []string{d.Name.Name}
+	}
+	if recv := receiverName(d.Recv.List[0].Type); recv != "" {
+		return []string{recv + "." + d.Name.Name}
+	}
+	return nil
+}
+
+// receiverName is the name of an exported receiver type, or "".
+func receiverName(expr ast.Expr) string {
+	if star, ok := expr.(*ast.StarExpr); ok {
+		expr = star.X
+	}
+	if id, ok := expr.(*ast.Ident); ok && id.IsExported() {
+		return id.Name
+	}
+	return ""
+}
+
+// specNames are the exported names of one type, constant or variable spec.
+func specNames(spec ast.Spec) []string {
+	var ids []*ast.Ident
+	switch s := spec.(type) {
+	case *ast.TypeSpec:
+		ids = []*ast.Ident{s.Name}
+	case *ast.ValueSpec:
+		ids = s.Names
+	}
+	var names []string
+	for _, id := range ids {
+		if id.IsExported() {
+			names = append(names, id.Name)
+		}
+	}
+	return names
 }

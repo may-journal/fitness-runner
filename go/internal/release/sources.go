@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -45,15 +46,26 @@ func capitalize(s string) string {
 	return string(unicode.ToUpper(r)) + s[size:]
 }
 
+// abbreviations end in a period that does not end a sentence.
+var abbreviations = []string{"e.g.", "i.e.", "vs.", "cf."}
+
 // firstSentence is the first sentence of a comment's first paragraph, on one
-// line. It ends at a period, question or exclamation mark before a space.
+// line. It ends at a period, question or exclamation mark before a space,
+// unless an abbreviation ends there.
 func firstSentence(text string) string {
 	text, _, _ = strings.Cut(text, "\n\n")
 	text = strings.Join(strings.Fields(text), " ")
 	for i := 0; i < len(text)-1; i++ {
-		if strings.IndexByte(".!?", text[i]) >= 0 && text[i+1] == ' ' {
+		if strings.IndexByte(".!?", text[i]) >= 0 && text[i+1] == ' ' && !endsAbbreviation(text[:i+1]) {
 			return text[:i+1]
 		}
 	}
 	return text
+}
+
+// endsAbbreviation reports whether text ends in a known abbreviation.
+func endsAbbreviation(text string) bool {
+	return slices.ContainsFunc(abbreviations, func(a string) bool {
+		return text == a || strings.HasSuffix(strings.ToLower(text), " "+a)
+	})
 }

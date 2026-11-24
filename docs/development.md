@@ -23,7 +23,7 @@ People edit the runner's docs as Markdown in [go/docs](../go/docs), which the bi
 
 It writes the command line into `fitness`. It fills the marked regions that list the commands, the checks the engine runs itself, the topics and the config keys. Those regions sit in the llms page, the README and `docs/checks.md`, and `llms.txt` copies the llms page.
 
-Edit the Markdown or the usage comment, never a generated region. The local [generated check](../fitness/generated/README.md) fails a generated file that is stale or edited by hand. Each subcommand needs a `//fitness:usage` line in its comment, which `fitness --help` prints, or generation fails.
+Edit the Markdown or the usage comment, never a generated region. The local [generated check](../fitness/generated/README.md) fails a generated file that is stale or edited by hand. Each subcommand needs a `//fitness:usage` line in its comment, which `fitness --help` prints, or generation fails. Two tests of requirement 0003.7 fail on a stale region, or on a subcommand or config key without a section.
 
 ## Requirement tests
 

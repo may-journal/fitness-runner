@@ -159,5 +159,7 @@ Before the run loop, the CLI entry routes a few subcommands. Each one lets a git
 | `fitness dupe-check`  | Scores an issue against older ones; its after-effect keeps one note and may close it. | The dupe check workflows run one step.                |
 | `fitness strip-front-matter` | Deletes the fitness keys from tracked Markdown's front matter, drops a block left empty, and lists each file. | A repo drops the keys no check reads now. |
 | `fitness comments` | Prints each code comment block with its line, language and kind, from the one shared reader in `go/pkg/comments`. | Every check reads comments the same way. |
+| `fitness dependabot-pr` | Fixes a Dependabot pull request's title, links its bump issue, and commits its changelog entry, so `pr-check` judges it like a person's. | Dependency updates pass the same PR bar. |
+| `fitness claude-hook` | Judges what a Claude Code hook event on stdin names: an edited file, a `gh` body before it posts, or a stop's changed files. | An agent sees findings while it works. |
 
 `go/internal/metadata/github.go` declares each workflow subcommand as its checks and an after-effect from `go/internal/aftereffect`. For `issue-check`, `go/internal/metadata/kinds.go` reads each kind from `.github/ISSUE_TEMPLATE` and adds the rules a kind label names. The local-branch check shares their judgments. Only after-effects write to GitHub, through the `gh` CLI.
