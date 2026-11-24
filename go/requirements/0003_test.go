@@ -898,6 +898,18 @@ func Test0003_7(t *testing.T) {
 				t.Errorf("fitness --help exit %d; no section in README.md, docs or go/docs names these subcommands %q, and go/docs/config.md lists no keys %q", code, commands, keys)
 			}
 		}},
+		{"a fitness checkout whose usage comment holds an `e.g.`: every generated file carries the whole sentence, not a cut one", func(t *testing.T) {
+			t.Parallel()
+			root := docsSources(t)
+			old, edited := "Prints a page that teaches an AI the whole CLI.", "Prints a page, e.g. for an AI, that teaches the whole CLI."
+			files := map[string]string{}
+			for _, name := range []string{"README.md", "llms.txt", "go/docs/runner/fitness.md", "go/cmd/fitness/usage.go", "go/cmd/fitness/help.go", "go/cmd/fitness/main.go"} {
+				files[name] = strings.ReplaceAll(repoFile(t, name), old, edited)
+			}
+			write(t, root, files)
+			out, code := rebuildDocs(t, root)
+			sees(t, out, code, 0, `"ok":true`)
+		}},
 		{"a fitness checkout whose config struct gains a field tagged `json:\"-\"`: the rebuild lists no config key for it", func(t *testing.T) {
 			t.Parallel()
 			root := docsSources(t)

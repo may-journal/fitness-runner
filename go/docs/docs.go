@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/pkg/mdx"
-	"strings"
 )
 
 // files holds each topic, named <topic>.md, and the runner's own pages

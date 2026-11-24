@@ -1080,8 +1080,9 @@ func helpCommands(help string) []string {
 	_, commands, _ := strings.Cut(help, "\nCommands:\n")
 	var names []string
 	for _, line := range strings.Split(commands, "\n") {
-		if form, ok := strings.CutPrefix(line, "  fitness "); ok && !slices.Contains(names, strings.Fields(form)[0]) {
-			names = append(names, strings.Fields(form)[0])
+		form, _ := strings.CutPrefix(line, "  fitness ")
+		if words := strings.Fields(form); strings.HasPrefix(line, "  fitness ") && len(words) > 0 && !slices.Contains(names, words[0]) {
+			names = append(names, words[0])
 		}
 	}
 	return names
