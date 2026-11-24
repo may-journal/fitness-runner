@@ -41,7 +41,7 @@ runs
 - 0003.7
   - Given AI agent has fitness installed
     - When it runs `fitness list`, `explain`, `docs`, `llms` or `--help`
-      - Then the binary explains each command from its comment and each page from go/docs Markdown, which a test checks for drift
+      - Then the binary explains each command from its comment and each page from go/docs Markdown, and a test fails any drift
 - 0003.8
   - Given Developer has code with comments
     - When `fitness comments` or a check reads it

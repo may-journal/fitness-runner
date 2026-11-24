@@ -44,6 +44,9 @@ func jsonKey(field *ast.Field) string {
 	}
 	raw, _ := strconv.Unquote(field.Tag.Value)
 	name, _, _ := strings.Cut(reflect.StructTag(raw).Get("json"), ",")
+	if name == "-" {
+		return ""
+	}
 	return name
 }
 

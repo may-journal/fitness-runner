@@ -136,7 +136,7 @@ const (
 // usageSourceNote and checksSourceNote name where a region's facts come from.
 const (
 	usageSourceNote  = "the usage comments in go/cmd/fitness and go/internal/selection"
-	checksSourceNote = "the check folders under go/cmd and go/docs/runner"
+	checksSourceNote = "the local-branch page in go/docs/runner"
 )
 
 // localBranchFolder is the package of local-branch, the one check the

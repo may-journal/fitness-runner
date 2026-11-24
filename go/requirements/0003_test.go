@@ -898,6 +898,14 @@ func Test0003_7(t *testing.T) {
 				t.Errorf("fitness --help exit %d; no section in README.md, docs or go/docs names these subcommands %q, and go/docs/config.md lists no keys %q", code, commands, keys)
 			}
 		}},
+		{"a fitness checkout whose config struct gains a field tagged `json:\"-\"`: the rebuild lists no config key for it", func(t *testing.T) {
+			t.Parallel()
+			root := docsSources(t)
+			conf := repoFile(t, "go/pkg/conf/conf.go")
+			write(t, root, map[string]string{"go/pkg/conf/conf.go": strings.Replace(conf, "type Config struct {\n", "type Config struct {\n\tHidden string `json:\"-\"`\n", 1)})
+			out, code := rebuildDocs(t, root)
+			sees(t, out, code, 0, `"ok":true`)
+		}},
 		{"a fitness checkout: every exported name of go/pkg/checkkit has a heading in go/docs/protocol.md", func(t *testing.T) {
 			t.Parallel()
 			if missing := undocumentedAPI(t); len(missing) > 0 {
