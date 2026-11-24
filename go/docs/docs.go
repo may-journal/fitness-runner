@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io/fs"
 	"path"
+
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
 	"strings"
 )
 
@@ -38,9 +40,12 @@ func (t Topic) Prose() string {
 
 // Topics returns every topic the binary embeds, in name order.
 func Topics() []Topic {
-	// The generator reads the same files with Read and fails a bad one, so
-	// the binary never embeds a topic Read refuses.
-	topics, _ := Read(files, ".")
+	// The generator fails a bad file with Read, so none is embedded.
+	// If one slips in, say so.
+	topics, err := Read(files, ".")
+	if err != nil {
+		panic(err)
+	}
 	return topics
 }
 
@@ -76,7 +81,7 @@ func readTopic(folder fs.FS, file string) (Topic, error) {
 	raw, err := fs.ReadFile(folder, file)
 	body := strings.ReplaceAll(string(raw), "\r\n", "\n")
 	t := Topic{Name: strings.TrimSuffix(path.Base(file), ".md"), Summary: summary(body), Body: body}
-	if err == nil && (!strings.HasPrefix(body, "# "+t.Name+"\n\n") || strings.Contains(t.Summary, ". ")) {
+	if err == nil && (!strings.HasPrefix(body, "# "+t.Name+"\n\n") || len(mdx.Sentences(t.Summary)) != 1 || strings.HasPrefix(t.Summary, "#")) {
 		err = fmt.Errorf("go/docs/%s: open with the title %q, a blank line, then one summary sentence", file, "# "+t.Name)
 	}
 	return t, err

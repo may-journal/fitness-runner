@@ -6,6 +6,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"maps"
 	"os"
 	"os/exec"
@@ -1294,4 +1297,106 @@ func unnamed(text, opening string, names []string) []string {
 		}
 	}
 	return missing
+}
+
+// undocumentedAPI are the exported declarations of go/pkg/checkkit, with
+// methods as "Type.Method", that no heading of go/docs/protocol.md names.
+func undocumentedAPI(t *testing.T) []string {
+	t.Helper()
+	pkgs, err := parser.ParseDir(token.NewFileSet(), filepath.Join("..", "pkg", "checkkit"), func(info os.FileInfo) bool {
+		return !strings.HasSuffix(info.Name(), "_test.go")
+	}, 0)
+	mustDo(t, err)
+	named := headingNames(repoFile(t, "go/docs/protocol.md"))
+	var missing []string
+	for _, name := range exportedNames(pkgs) {
+		if !named[name] {
+			missing = append(missing, name)
+		}
+	}
+	slices.Sort(missing)
+	return missing
+}
+
+// headingNames are the comma-separated names in each "## " heading of text.
+func headingNames(text string) map[string]bool {
+	named := map[string]bool{}
+	for _, heading := range regexp.MustCompile(`(?m)^## (.+)$`).FindAllStringSubmatch(text, -1) {
+		for _, name := range strings.Split(heading[1], ", ") {
+			named[name] = true
+		}
+	}
+	return named
+}
+
+// exportedNames are the exported names every declaration of pkgs introduces.
+func exportedNames(pkgs map[string]*ast.Package) []string {
+	var names []string
+	for _, pkg := range pkgs {
+		for _, file := range pkg.Files {
+			for _, decl := range file.Decls {
+				names = append(names, declaredNames(decl)...)
+			}
+		}
+	}
+	return names
+}
+
+// declaredNames are the exported names one declaration introduces, a method
+// as "Type.Method".
+func declaredNames(decl ast.Decl) []string {
+	switch d := decl.(type) {
+	case *ast.FuncDecl:
+		return funcName(d)
+	case *ast.GenDecl:
+		var names []string
+		for _, spec := range d.Specs {
+			names = append(names, specNames(spec)...)
+		}
+		return names
+	}
+	return nil
+}
+
+// funcName is the exported name of a function or method, if it has one.
+func funcName(d *ast.FuncDecl) []string {
+	if !d.Name.IsExported() {
+		return nil
+	}
+	if d.Recv == nil {
+		return []string{d.Name.Name}
+	}
+	if recv := receiverName(d.Recv.List[0].Type); recv != "" {
+		return []string{recv + "." + d.Name.Name}
+	}
+	return nil
+}
+
+// receiverName is the name of an exported receiver type, or "".
+func receiverName(expr ast.Expr) string {
+	if star, ok := expr.(*ast.StarExpr); ok {
+		expr = star.X
+	}
+	if id, ok := expr.(*ast.Ident); ok && id.IsExported() {
+		return id.Name
+	}
+	return ""
+}
+
+// specNames are the exported names of one type, constant or variable spec.
+func specNames(spec ast.Spec) []string {
+	var ids []*ast.Ident
+	switch s := spec.(type) {
+	case *ast.TypeSpec:
+		ids = []*ast.Ident{s.Name}
+	case *ast.ValueSpec:
+		ids = s.Names
+	}
+	var names []string
+	for _, id := range ids {
+		if id.IsExported() {
+			names = append(names, id.Name)
+		}
+	}
+	return names
 }

@@ -898,6 +898,12 @@ func Test0003_7(t *testing.T) {
 				t.Errorf("fitness --help exit %d; no section in README.md, docs or go/docs names these subcommands %q, and go/docs/config.md lists no keys %q", code, commands, keys)
 			}
 		}},
+		{"a fitness checkout: every exported name of go/pkg/checkkit has a heading in go/docs/protocol.md", func(t *testing.T) {
+			t.Parallel()
+			if missing := undocumentedAPI(t); len(missing) > 0 {
+				t.Errorf("go/docs/protocol.md has no heading for these go/pkg/checkkit names: %q", missing)
+			}
+		}},
 	}.run(t)
 }
 
