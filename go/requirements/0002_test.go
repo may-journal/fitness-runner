@@ -271,7 +271,7 @@ func Test0002_3(t *testing.T) {
 			out, code := goTest(t, files, "FITNESS_CHECKS_DIR="+checks, "REQ_FITNESS="+runner)
 			sees(t, out, code, 0, "All 1 checks passed")
 		}},
-		{"lists this module's Go dependencies of every engine file, for any platform, apart from the generated `checks.go`", func(t *testing.T) {
+		{"lists this module's Go dependencies of every engine file, for any platform, apart from `checks.go`, which links the check", func(t *testing.T) {
 			t.Parallel()
 			imports, builtIns := engineImportsFree(t)
 			if builtIns == 0 {

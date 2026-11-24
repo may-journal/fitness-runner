@@ -1,5 +1,4 @@
-// Package checkkit is the contract between the fitness runner and a check
-// binary, as go/docs/protocol.md describes.
+// Package checkkit is the contract between the runner and a check binary: its JSON result, its exit codes and its Main (go/docs/protocol.md).
 package checkkit
 
 import (
