@@ -28,10 +28,23 @@ func PackageRoots(globs, files []string) ([]string, error) {
 }
 
 // matchFolders is the folders glob matches, failing when it is malformed
-// or matches none.
+// or matches none. A glob of "." names the repo root.
 func matchFolders(glob string, folders []string) ([]string, error) {
 	if _, err := path.Match(glob, ""); err != nil {
 		return nil, fmt.Errorf("%s: packages glob %q is malformed: %w", FileName, glob, err)
+	}
+	out := matching(path.Clean(glob), folders)
+	if len(out) == 0 {
+		return nil, fmt.Errorf("%s: packages glob %q matches no folder of tracked files; fix the glob or remove it", FileName, glob)
+	}
+	return out, nil
+}
+
+// matching is the folders a cleaned glob matches, each `*` within one
+// folder name, or the root alone for ".".
+func matching(glob string, folders []string) []string {
+	if glob == "." {
+		return []string{"."}
 	}
 	var out []string
 	for _, folder := range folders {
@@ -39,10 +52,7 @@ func matchFolders(glob string, folders []string) ([]string, error) {
 			out = append(out, folder)
 		}
 	}
-	if len(out) == 0 {
-		return nil, fmt.Errorf("%s: packages glob %q matches no folder of tracked files; fix the glob or remove it", FileName, glob)
-	}
-	return out, nil
+	return out
 }
 
 // foldersOf is every folder that holds one of files, at any depth, below

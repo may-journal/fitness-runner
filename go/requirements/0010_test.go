@@ -8,17 +8,22 @@ import (
 
 func Test0010_1(t *testing.T) {
 	cases{
-		{"a `packages` setting whose globs match package folders, a file and a folder twice", func(t *testing.T) {
+		{"a `packages` setting whose globs match package folders, a file, a folder twice and the root, written loosely", func(t *testing.T) {
 			t.Parallel()
-			out, code := fitness(t, example(t, "happyRepo", rootsCheck(t, `{"packages": ["cmd/*", "cmd/b", "lib"]}`)), nil, "check", "roots-rule")
-			sees(t, out, code, 1, "package roots: cmd/a, cmd/b, lib")
+			out, code := fitness(t, example(t, "happyRepo", rootsCheck(t, `{"packages": ["./cmd/*", "cmd/b/", "lib", "."]}`)), nil, "check", "roots-rule")
+			sees(t, out, code, 1, "package roots: ., cmd/a, cmd/b, lib")
 		}},
-		{"a `packages` glob that matches no folder", func(t *testing.T) {
+		{"a `packages` glob that matches no folder, or is malformed", func(t *testing.T) {
 			t.Parallel()
-			out, code := fitness(t, example(t, "happyRepo", rootsCheck(t, `{"packages": ["cmd/*", "Packages/*"]}`)), nil, "check", "roots-rule")
-			sees(t, out, code, 1, `.fitnessrc.json: packages glob "Packages/*" matches no folder of tracked files`)
-			if strings.Contains(out, "package roots:") {
-				t.Errorf("a glob matching no folder must stop the run before any check:\n%s", out)
+			for glob, want := range map[string]string{
+				"Packages/*": `.fitnessrc.json: packages glob "Packages/*" matches no folder of tracked files`,
+				"cmd/[":      `.fitnessrc.json: packages glob "cmd/[" is malformed`,
+			} {
+				out, code := fitness(t, example(t, "happyRepo", rootsCheck(t, `{"packages": ["cmd/*", "`+glob+`"]}`)), nil, "check", "roots-rule")
+				sees(t, out, code, 1, want)
+				if strings.Contains(out, "package roots:") {
+					t.Errorf("a glob matching no folder must stop the run before any check:\n%s", out)
+				}
 			}
 		}},
 		{"no `packages` setting, with the variable inherited from the shell", func(t *testing.T) {

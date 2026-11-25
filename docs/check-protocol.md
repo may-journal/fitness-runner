@@ -130,7 +130,9 @@ A check that compares files cuts its corpus to what the change can alter. duplic
 
 ## Package roots
 
-A monorepo names its package folders once with `"packages": ["cmd/*"]` in `.fitnessrc.json`, a list of folder globs the engine owns. Each run lists the matched roots in `FITNESS_PACKAGES`, repo-relative and sorted, one per line, for every check. A glob matching no folder of tracked files stops the run, naming it. Without the key the variable is unset and nothing changes.
+A monorepo names its package folders once with `"packages": ["cmd/*"]` in `.fitnessrc.json`, a list of folder globs the engine owns. Each run of the repo lists the matched roots in `FITNESS_PACKAGES`, repo-relative and sorted, one per line, for every check. A glob matching no folder of tracked files stops the run, naming it.
+
+Without the key the variable is unset and nothing changes, as in a `--blob` run, which judges only its text.
 
 `checkkit.PackageRoots` returns the roots, or `.` alone when none are set, so a check judges each package on its own. The protocol version stays the same, and an older check ignores the variable.
 

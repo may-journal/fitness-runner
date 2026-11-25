@@ -39,6 +39,7 @@ Fields that shape a run:
   - Unset, the repo's owner and its org's members may approve, as GitHub reports each comment author's association.
 - `scopedPullRequests` true skips a pull request's full scan, for a huge repo. A push to main still scans every file.
 - `packages` lists globs, such as `"cmd/*"`, that name a monorepo's package folders, so each check judges every package on its own.
+  - Each `*` matches within one folder name, and `.` names the repo root.
   - A glob matching no folder of tracked files fails the run, naming the glob.
   - Unset, the repo root is the one package.
   - The runner hands every check the matched roots in `FITNESS_PACKAGES`, and `checkkit.PackageRoots` reads them.
