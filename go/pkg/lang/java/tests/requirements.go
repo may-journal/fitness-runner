@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/pkg/lang"
 	"github.com/may-journal/fitness-runner/go/pkg/lang/java"
@@ -38,15 +39,41 @@ func scan(root string) ([]lang.Test, []string, bool, error) {
 	return tests, files, java.Applies(root), nil
 }
 
-// fileTests lists the test methods one source declares.
+// fileTests lists the test methods one source declares, each requirement
+// test with its cases.
 func fileTests(file, src string) []lang.Test {
 	var out []lang.Test
 	for _, m := range views.Methods(src) {
 		if runs(m) {
-			out = append(out, lang.Test{Name: m.Name, ID: naming.ID(m.Name), Loc: fmt.Sprintf("%s:%d", file, m.Line), File: file})
+			test := lang.Test{Name: m.Name, ID: naming.ID(m.Name), Loc: fmt.Sprintf("%s:%d", file, m.Line), File: file}
+			if test.ID != "" {
+				test.Cases = cases(file, m.Calls)
+			}
+			out = append(out, test)
 		}
 	}
 	return out
+}
+
+// cases lists the named cases among a test's calls: the dynamic tests and
+// containers a @TestFactory returns, and the Named arguments it passes.
+func cases(file string, calls []views.Call) []lang.Case {
+	var out []lang.Case
+	for _, c := range calls {
+		if namesCase(c.Name) {
+			out = append(out, lang.NewCase(c.Text, file, c.Line))
+		}
+	}
+	return out
+}
+
+// caseCalls are the last names of the JUnit calls whose string names a case.
+var caseCalls = []string{"dynamicTest", "dynamicContainer", "named"}
+
+// namesCase reports a call whose string names a case, such as
+// DynamicTest.dynamicTest or Named.of.
+func namesCase(name string) bool {
+	return slices.Contains(caseCalls, name[strings.LastIndex(name, ".")+1:]) || strings.HasSuffix(name, "Named.of")
 }
 
 // runs reports a method a framework runs as a test, by its own annotation

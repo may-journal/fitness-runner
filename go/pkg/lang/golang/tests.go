@@ -51,30 +51,51 @@ func scan(root string) ([]lang.Test, []string, bool, error) {
 	return tests, files, len(walkfs.FilesByExt(root, Ext)) > 0, nil
 }
 
-// scanTests parses every test file and returns its test declarations.
+// scanTests parses every test file and returns its test declarations,
+// reading each folder's struct types first so a case table's rows resolve.
 func scanTests(root string, files []string) ([]lang.Test, error) {
 	fset := token.NewFileSet()
-	var tests []lang.Test
-	for _, f := range files {
-		parsed, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(f)), nil, parser.SkipObjectResolution)
+	parsed := make([]*ast.File, len(files))
+	named := map[string]tables{}
+	for i, f := range files {
+		p, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(f)), nil, parser.SkipObjectResolution)
 		if err != nil {
 			return nil, err
 		}
-		tests = append(tests, fileTests(fset, f, parsed)...)
+		parsed[i] = p
+		if named[path.Dir(f)] == nil {
+			named[path.Dir(f)] = tables{}
+		}
+		named[path.Dir(f)].add(p)
+	}
+	var tests []lang.Test
+	for i, f := range files {
+		tests = append(tests, fileTests(fset, f, parsed[i], named[path.Dir(f)])...)
 	}
 	return tests, nil
 }
 
-// fileTests returns one file's top-level test functions.
-func fileTests(fset *token.FileSet, file string, parsed *ast.File) []lang.Test {
+// fileTests returns one file's top-level test functions, each requirement
+// test with its cases.
+func fileTests(fset *token.FileSet, file string, parsed *ast.File, named tables) []lang.Test {
 	var tests []lang.Test
 	for _, decl := range parsed.Decls {
 		if fn, ok := decl.(*ast.FuncDecl); ok && isTest(fn) {
-			loc := fmt.Sprintf("%s:%d", file, fset.Position(fn.Pos()).Line)
-			tests = append(tests, lang.Test{Name: fn.Name.Name, ID: naming.ID(fn.Name.Name), Loc: loc, File: file})
+			tests = append(tests, funcTest(fset, file, fn, named))
 		}
 	}
 	return tests
+}
+
+// funcTest is the test a test function declares, with its cases when it
+// is a requirement test.
+func funcTest(fset *token.FileSet, file string, fn *ast.FuncDecl, named tables) lang.Test {
+	loc := fmt.Sprintf("%s:%d", file, fset.Position(fn.Pos()).Line)
+	test := lang.Test{Name: fn.Name.Name, ID: naming.ID(fn.Name.Name), Loc: loc, File: file}
+	if test.ID != "" && fn.Body != nil {
+		test.Cases = cases(fset, file, fn.Body, named)
+	}
+	return test
 }
 
 // numbers returns the requirement numbers a test file's name carries.

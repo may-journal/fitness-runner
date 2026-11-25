@@ -7,6 +7,7 @@ import (
 	"path"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -71,6 +72,9 @@ type Test struct {
 	Name string
 	// ID is the acceptance ID the name carries, or "" for none.
 	ID string
+	// Cases are the named cases a requirement test runs, such as Go
+	// subtests, in source order.
+	Cases []Case `json:",omitempty"`
 	// Loc is where the test is declared, as file:line.
 	Loc string
 	// File is the path of the file declaring the test.
@@ -122,6 +126,31 @@ func (p TestPrefix) ID(name string) string {
 		return ""
 	}
 	return m[1] + "." + m[2]
+}
+
+// Case is one named case inside a requirement test, such as a t.Run.
+type Case struct {
+	// Name is the case's name as written.
+	Name string
+	// Step is the requirement step ID the name opens with, such as
+	// 0003.6.2, or "" for none.
+	Step string `json:",omitempty"`
+	// Loc is where the case is declared, as file:line.
+	Loc string
+}
+
+// stepID matches the step ID opening a case name, such as 0003.6.2. The
+// name ends after it, or goes on after a space or colon.
+var stepID = regexp.MustCompile(`^(\d{4}\.[1-9]\d*\.[1-9]\d*)(?:$|[\s:])`)
+
+// NewCase is the case named name, declared at line of file, with the step
+// ID its name opens with.
+func NewCase(name, file string, line int) Case {
+	c := Case{Name: name, Loc: file + ":" + strconv.Itoa(line)}
+	if m := stepID.FindStringSubmatch(name); m != nil {
+		c.Step = m[1]
+	}
+	return c
 }
 
 // TestFileNumbers lists the requirement numbers a test file's name
