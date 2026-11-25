@@ -51,30 +51,78 @@ func scan(root string) ([]lang.Test, []string, bool, error) {
 	return tests, files, len(walkfs.FilesByExt(root, Ext)) > 0, nil
 }
 
-// scanTests parses every test file and returns its test declarations.
+// scanTests parses every test file and returns its test declarations, in
+// file order. It reads a folder at a time, types first, so table rows
+// resolve and only one folder's syntax trees stay in memory.
 func scanTests(root string, files []string) ([]lang.Test, error) {
-	fset := token.NewFileSet()
-	var tests []lang.Test
-	for _, f := range files {
-		parsed, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(f)), nil, parser.SkipObjectResolution)
-		if err != nil {
+	byFile := map[string][]lang.Test{}
+	for _, folder := range folders(files) {
+		if err := scanFolder(root, folder, byFile); err != nil {
 			return nil, err
 		}
-		tests = append(tests, fileTests(fset, f, parsed)...)
+	}
+	var tests []lang.Test
+	for _, f := range files {
+		tests = append(tests, byFile[f]...)
 	}
 	return tests, nil
 }
 
-// fileTests returns one file's top-level test functions.
-func fileTests(fset *token.FileSet, file string, parsed *ast.File) []lang.Test {
+// folders groups files by folder, in the order each folder first appears.
+func folders(files []string) [][]string {
+	index := map[string]int{}
+	var out [][]string
+	for _, f := range files {
+		i, ok := index[path.Dir(f)]
+		if !ok {
+			i, index[path.Dir(f)] = len(out), len(out)
+			out = append(out, nil)
+		}
+		out[i] = append(out[i], f)
+	}
+	return out
+}
+
+// scanFolder reads one folder's test files into byFile.
+func scanFolder(root string, files []string, byFile map[string][]lang.Test) error {
+	fset := token.NewFileSet()
+	parsed := make([]*ast.File, len(files))
+	named := tables{}
+	for i, f := range files {
+		p, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(f)), nil, parser.SkipObjectResolution)
+		if err != nil {
+			return err
+		}
+		parsed[i] = p
+		named.add(p)
+	}
+	for i, f := range files {
+		byFile[f] = fileTests(fset, f, parsed[i], named)
+	}
+	return nil
+}
+
+// fileTests returns one file's top-level test functions, each requirement
+// test with its cases.
+func fileTests(fset *token.FileSet, file string, parsed *ast.File, named tables) []lang.Test {
 	var tests []lang.Test
 	for _, decl := range parsed.Decls {
 		if fn, ok := decl.(*ast.FuncDecl); ok && isTest(fn) {
-			loc := fmt.Sprintf("%s:%d", file, fset.Position(fn.Pos()).Line)
-			tests = append(tests, lang.Test{Name: fn.Name.Name, ID: naming.ID(fn.Name.Name), Loc: loc, File: file})
+			tests = append(tests, funcTest(fset, file, fn, named))
 		}
 	}
 	return tests
+}
+
+// funcTest is the test a test function declares, with its cases when it
+// is a requirement test.
+func funcTest(fset *token.FileSet, file string, fn *ast.FuncDecl, named tables) lang.Test {
+	loc := fmt.Sprintf("%s:%d", file, fset.Position(fn.Pos()).Line)
+	test := lang.Test{Name: fn.Name.Name, ID: naming.ID(fn.Name.Name), Loc: loc, File: file}
+	if test.ID != "" && fn.Body != nil {
+		test.Cases = cases(fset, file, fn.Body, named)
+	}
+	return test
 }
 
 // numbers returns the requirement numbers a test file's name carries.

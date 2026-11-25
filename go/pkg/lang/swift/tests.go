@@ -54,13 +54,14 @@ func scanSwift(root string, files []string) ([]lang.Test, error) {
 		if err != nil {
 			return nil, err
 		}
-		tests = append(tests, swiftFileTests(f, blankSwift(string(data)))...)
+		code, literals := Literals(string(data))
+		tests = append(tests, swiftFileTests(f, code, literals)...)
 	}
 	return tests, nil
 }
 
 // swiftFileTests returns the tests declared in one file's blanked code.
-func swiftFileTests(file, code string) []lang.Test {
+func swiftFileTests(file, code string, literals []Literal) []lang.Test {
 	funcs := swiftFunc.FindAllStringSubmatchIndex(code, -1)
 	starts := make([]int, len(funcs))
 	for i, m := range funcs {
@@ -72,11 +73,22 @@ func swiftFileTests(file, code string) []lang.Test {
 		m := funcs[i]
 		name := code[m[2]:m[3]]
 		if isSwiftTest(code, m, bodies[owner] && strings.HasPrefix(name, "test")) {
-			loc := fmt.Sprintf("%s:%d", file, strings.Count(code[:m[0]], "\n")+1)
-			tests = append(tests, lang.Test{Name: name, ID: naming.ID(name), Loc: loc, File: file})
+			tests = append(tests, swiftTest(file, code, m, literals))
 		}
 	}
 	return tests
+}
+
+// swiftTest is the test the function at m declares, with its cases when
+// it is a requirement test.
+func swiftTest(file, code string, m []int, literals []Literal) lang.Test {
+	name := code[m[2]:m[3]]
+	loc := fmt.Sprintf("%s:%d", file, strings.Count(code[:m[0]], "\n")+1)
+	test := lang.Test{Name: name, ID: naming.ID(name), Loc: loc, File: file}
+	if test.ID != "" {
+		test.Cases = activities(file, code, m[1], literals)
+	}
+	return test
 }
 
 // isSwiftTest reports whether the function at m runs as a test: marked @Test,

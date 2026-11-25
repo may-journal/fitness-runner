@@ -50,6 +50,7 @@ flowchart TB
         red[6 Red result names the fix<br/>Req 0003]:::blocked
         guard[(7 Guard commits and pushes<br/>Req 0005)]:::system
         judge[(8 Judge text before and after it posts<br/>Req 0006)]:::system
+        cases[(11 Read test cases<br/>Req 0009)]:::system
     end
 
     subgraph github["On GitHub"]
@@ -71,6 +72,8 @@ flowchart TB
     judge -->|H| actions
     actions -->|I| release
     release -->|J| install
+    run -->|K| cases
+    cases --> run
 
     classDef persona fill:#eef2ff,stroke:#6366f1,color:#312e81,stroke-width:2px
     classDef screen fill:#f8fafc,stroke:#64748b,color:#1e293b,stroke-width:2px
@@ -97,6 +100,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 8   | Drafts judged before they post, and one verdict on GitHub.    | System    | Text is held to rules like code.                                   |
 | 9   | Shared workflows, issue upkeep and Auto-merge.                | System    | Every change is judged, and a ready PR merges with no hand click.  |
 | 10  | A tagged release from `version.txt` with checked archives.    | System    | Users install a release whose files and notes match the repo.      |
+| 11  | Each case a requirement test runs, shared with the checks.    | System    | A requirement step ties to the case that proves it.                |
 | A   | The run needs checks it has not cached.                       | Connector | Only the checks the input reaches download.                        |
 | B   | A check is red.                                               | Connector | The person sees what broke.                                        |
 | C   | The check does not fit the repo.                              | Connector | The repo tunes its checks instead of ignoring red.                 |
@@ -107,3 +111,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | H   | Every verdict passes.                                         | Connector | GitHub takes over the judging.                                     |
 | I   | Merged fitness changes reach a release PR.                    | Connector | Every merge ships in the next release.                             |
 | J   | The next install fetches the new release.                     | Connector | The loop closes: a release reaches every repo.                     |
+| K   | A check of the repo's own reads the tests.                    | Connector | It judges each step against the case named for it.                 |

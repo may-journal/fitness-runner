@@ -100,6 +100,10 @@ func (r *reader) method(owner, name string, start, open int, result string, clos
 	d := r.add(name, owner, codemodel.KindMethod, start, last)
 	r.signature(d, open, end)
 	r.mark(d, start, open)
+	if m, ok := r.marks[d]; ok {
+		m.calls = r.calls(end+1, last)
+		r.marks[d] = m
+	}
 	if result != "" {
 		d.Results = []string{result}
 	}

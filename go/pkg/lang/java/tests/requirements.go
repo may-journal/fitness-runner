@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/pkg/lang"
 	"github.com/may-journal/fitness-runner/go/pkg/lang/java"
@@ -38,15 +39,51 @@ func scan(root string) ([]lang.Test, []string, bool, error) {
 	return tests, files, java.Applies(root), nil
 }
 
-// fileTests lists the test methods one source declares.
+// fileTests lists the test methods one source declares, each requirement
+// test with its cases.
 func fileTests(file, src string) []lang.Test {
 	var out []lang.Test
 	for _, m := range views.Methods(src) {
 		if runs(m) {
-			out = append(out, lang.Test{Name: m.Name, ID: naming.ID(m.Name), Loc: fmt.Sprintf("%s:%d", file, m.Line), File: file})
+			test := lang.Test{Name: m.Name, ID: naming.ID(m.Name), Loc: fmt.Sprintf("%s:%d", file, m.Line), File: file}
+			if test.ID != "" {
+				test.Cases = cases(file, m.Calls)
+			}
+			out = append(out, test)
 		}
 	}
 	return out
+}
+
+// cases lists the named cases among a test's calls: the dynamic tests and
+// containers a @TestFactory returns, and the Named arguments it passes.
+func cases(file string, calls []views.Call) []lang.Case {
+	var out []lang.Case
+	for _, c := range calls {
+		if namesCase(c.Name) {
+			out = append(out, lang.NewCase(c.Text, file, c.Line))
+		}
+	}
+	return out
+}
+
+// bareCases are the JUnit factories whose string names a case when called
+// bare, after a static import.
+var bareCases = []string{"dynamicTest", "dynamicContainer"}
+
+// classCases are the factories whose string names a case when called
+// through their class. Named's need the class, since a bare named call may
+// be another library's.
+var classCases = []string{"DynamicTest.dynamicTest", "DynamicContainer.dynamicContainer", "Named.of", "Named.named"}
+
+// namesCase reports a call whose string names a case, such as
+// DynamicTest.dynamicTest or Named.of, by its last one or two names.
+func namesCase(name string) bool {
+	segments := strings.Split(name, ".")
+	if len(segments) == 1 {
+		return slices.Contains(bareCases, name)
+	}
+	return slices.Contains(classCases, strings.Join(segments[len(segments)-2:], "."))
 }
 
 // runs reports a method a framework runs as a test, by its own annotation
