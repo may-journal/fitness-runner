@@ -1016,8 +1016,12 @@ func contextEnv(root string, checks []resolved, all bool, scope []string, msg st
 	if err != nil {
 		return nil, err
 	}
+	packages, err := packagesEnv(root)
+	if err != nil {
+		return nil, err
+	}
 	env := os.Environ()
-	for _, name := range []string{changedFilesEnv, walkfs.TrackedFilesEnv, comments.ViewsEnv, checkkit.ScopeFileEnv, checkkit.NetworkEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
+	for _, name := range []string{changedFilesEnv, walkfs.TrackedFilesEnv, comments.ViewsEnv, checkkit.ScopeFileEnv, checkkit.NetworkEnv, checkkit.PackagesEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
 		env = withoutVar(env, name)
 	}
 	// A check's `git status` would otherwise refresh and rewrite the index,
@@ -1025,8 +1029,36 @@ func contextEnv(root string, checks []resolved, all bool, scope []string, msg st
 	// password prompt would wait, unseen, until the budget kills the check.
 	env = append(append(env, gitx.NoPrompt(root)...), "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
 	env = append(env, scope...)
+	env = append(env, packages...)
 	env = append(env, networkEnv(root, checks, msg)...)
 	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(checkNames(checks), "\n")), nil
+}
+
+// packagesEnv is the env entry listing the package roots that the packages
+// globs match, or none without the key.
+func packagesEnv(root string) ([]string, error) {
+	globs, err := packageGlobs(root)
+	if err != nil || len(globs) == 0 {
+		return nil, err
+	}
+	files, err := walkfs.AllFiles(root)
+	if err != nil {
+		return nil, err
+	}
+	roots, err := conf.PackageRoots(globs, files)
+	if err != nil {
+		return nil, err
+	}
+	return []string{checkkit.PackagesEnv + "=" + strings.Join(roots, "\n")}, nil
+}
+
+// packageGlobs is the packages key of root's config, nil without one.
+func packageGlobs(root string) ([]string, error) {
+	cfg, err := conf.Load(root)
+	if err != nil || cfg == nil {
+		return nil, err
+	}
+	return cfg.Packages, nil
 }
 
 // scopeEnv is the env entry that scopes the run: `--dir` when set, else the

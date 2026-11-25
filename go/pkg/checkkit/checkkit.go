@@ -254,6 +254,21 @@ func scopeFiles() []string {
 	return splitLines(string(data))
 }
 
+// PackagesEnv lists, one per line, the repo-relative package roots that the
+// packages key of .fitnessrc.json matches, sorted. The runner leaves it
+// unset when the key is unset, and an older check never reads it.
+const PackagesEnv = "FITNESS_PACKAGES"
+
+// PackageRoots returns the repo-relative package roots of this run, sorted,
+// for a check that judges each package on its own. Without a packages key
+// the repo root, ".", is the only one.
+func PackageRoots() []string {
+	if roots := splitLines(os.Getenv(PackagesEnv)); roots != nil {
+		return roots
+	}
+	return []string{"."}
+}
+
 // EnabledChecks returns the enabled check names for this run, in order.
 func EnabledChecks() []string {
 	return splitLines(os.Getenv("FITNESS_ENABLED_CHECKS"))

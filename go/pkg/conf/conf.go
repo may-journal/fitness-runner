@@ -40,6 +40,10 @@ type Config struct {
 	// ScopedPullRequests true skips a pull request's full scan, for a huge
 	// repo. A push to main still scans every file.
 	ScopedPullRequests bool `json:"scopedPullRequests"`
+	// Packages lists globs, such as "cmd/*", that name a monorepo's package
+	// folders, so each check judges every package on its own. Unset, the
+	// repo root is the one package, and a glob matching no folder fails.
+	Packages []string `json:"packages"`
 }
 
 // FileName is the config file the runner reads at the repo root.
