@@ -51,28 +51,55 @@ func scan(root string) ([]lang.Test, []string, bool, error) {
 	return tests, files, len(walkfs.FilesByExt(root, Ext)) > 0, nil
 }
 
-// scanTests parses every test file and returns its test declarations,
-// reading each folder's struct types first so a case table's rows resolve.
+// scanTests parses every test file and returns its test declarations, in
+// file order. It reads a folder at a time, types first, so table rows
+// resolve and only one folder's syntax trees stay in memory.
 func scanTests(root string, files []string) ([]lang.Test, error) {
+	byFile := map[string][]lang.Test{}
+	for _, folder := range folders(files) {
+		if err := scanFolder(root, folder, byFile); err != nil {
+			return nil, err
+		}
+	}
+	var tests []lang.Test
+	for _, f := range files {
+		tests = append(tests, byFile[f]...)
+	}
+	return tests, nil
+}
+
+// folders groups files by folder, in the order each folder first appears.
+func folders(files []string) [][]string {
+	index := map[string]int{}
+	var out [][]string
+	for _, f := range files {
+		i, ok := index[path.Dir(f)]
+		if !ok {
+			i, index[path.Dir(f)] = len(out), len(out)
+			out = append(out, nil)
+		}
+		out[i] = append(out[i], f)
+	}
+	return out
+}
+
+// scanFolder reads one folder's test files into byFile.
+func scanFolder(root string, files []string, byFile map[string][]lang.Test) error {
 	fset := token.NewFileSet()
 	parsed := make([]*ast.File, len(files))
-	named := map[string]tables{}
+	named := tables{}
 	for i, f := range files {
 		p, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(f)), nil, parser.SkipObjectResolution)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		parsed[i] = p
-		if named[path.Dir(f)] == nil {
-			named[path.Dir(f)] = tables{}
-		}
-		named[path.Dir(f)].add(p)
+		named.add(p)
 	}
-	var tests []lang.Test
 	for i, f := range files {
-		tests = append(tests, fileTests(fset, f, parsed[i], named[path.Dir(f)])...)
+		byFile[f] = fileTests(fset, f, parsed[i], named)
 	}
-	return tests, nil
+	return nil
 }
 
 // fileTests returns one file's top-level test functions, each requirement

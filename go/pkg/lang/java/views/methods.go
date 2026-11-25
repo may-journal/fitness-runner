@@ -113,14 +113,34 @@ func (r *reader) dotted(i int) string {
 	return name
 }
 
-// javaString reads a one-line string literal's value; a text block or a
-// character is none.
+// javaString reads a one-line string literal's value, decoding its escapes
+// as Java does. A text block, a character, or an escape Java lacks is none.
 func javaString(lit string) (string, bool) {
 	if !strings.HasPrefix(lit, `"`) || strings.HasPrefix(lit, `"""`) {
 		return "", false
 	}
-	if text, err := strconv.Unquote(lit); err == nil {
-		return text, true
+	var b strings.Builder
+	for rest := lit[1 : len(lit)-1]; rest != ""; {
+		r, tail, ok := javaChar(rest)
+		if !ok {
+			return "", false
+		}
+		b.WriteRune(r)
+		rest = tail
 	}
-	return strings.Trim(lit, `"`), true
+	return b.String(), true
+}
+
+// javaOnly are the escapes Java has and a Go string lacks.
+var javaOnly = map[string]rune{`\s`: ' ', `\'`: '\''}
+
+// javaChar decodes the first character of a string literal's body.
+func javaChar(s string) (rune, string, bool) {
+	if len(s) >= 2 {
+		if r, ok := javaOnly[s[:2]]; ok {
+			return r, s[2:], true
+		}
+	}
+	r, _, tail, err := strconv.UnquoteChar(s, '"')
+	return r, tail, err == nil
 }

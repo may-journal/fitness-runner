@@ -67,13 +67,23 @@ func cases(file string, calls []views.Call) []lang.Case {
 	return out
 }
 
-// caseCalls are the last names of the JUnit calls whose string names a case.
-var caseCalls = []string{"dynamicTest", "dynamicContainer", "named"}
+// bareCases are the JUnit factories whose string names a case when called
+// bare, after a static import.
+var bareCases = []string{"dynamicTest", "dynamicContainer"}
+
+// classCases are the factories whose string names a case when called
+// through their class. Named's need the class, since a bare named call may
+// be another library's.
+var classCases = []string{"DynamicTest.dynamicTest", "DynamicContainer.dynamicContainer", "Named.of", "Named.named"}
 
 // namesCase reports a call whose string names a case, such as
-// DynamicTest.dynamicTest or Named.of.
+// DynamicTest.dynamicTest or Named.of, by its last one or two names.
 func namesCase(name string) bool {
-	return slices.Contains(caseCalls, name[strings.LastIndex(name, ".")+1:]) || strings.HasSuffix(name, "Named.of")
+	segments := strings.Split(name, ".")
+	if len(segments) == 1 {
+		return slices.Contains(bareCases, name)
+	}
+	return slices.Contains(classCases, strings.Join(segments[len(segments)-2:], "."))
 }
 
 // runs reports a method a framework runs as a test, by its own annotation

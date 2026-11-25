@@ -139,9 +139,9 @@ type Case struct {
 	Loc string
 }
 
-// stepID matches the step ID opening a case name, such as 0003.6.2. The
-// name ends after it, or goes on after a space or colon.
-var stepID = regexp.MustCompile(`^(\d{4}\.[1-9]\d*\.[1-9]\d*)(?:$|[\s:])`)
+// stepID matches the step ID opening a case name, such as 0003.6.2. Next
+// comes the end, a mark other than a letter, digit or dot, or a lone dot.
+var stepID = regexp.MustCompile(`^(\d{4}\.[1-9]\d*\.[1-9]\d*)(?:$|[^\w.]|\.(?:$|\D))`)
 
 // NewCase is the case named name, declared at line of file, with the step
 // ID its name opens with.
