@@ -21,7 +21,8 @@ Before adding a doc, find the one that already states the area. [ADR 0004](https
 - Why: one or two sentences in the user's voice, saying what holds once the requirement is met.
 - Measurement: numerator, `-` and denominator lines, each set apart by a blank line. No `Source:` line.
 - Requirements: `- NNNN.N`, then exactly one Given, When, and Then, each nested two spaces deeper, as Biome formats it.
-- Hold a doc to one to eight acceptances. A second Given, When, or Then is a new acceptance.
+- Hold a doc to the [requirements](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-requirements/README.md) check's acceptance cap; `fitness explain requirements` shows its default. A second Given, When, or Then is a new acceptance.
+- Near the cap, fold cases of one behavior into table rows of one acceptance's test before adding a doc.
 - Start each Given with an actor the system context declares, by name or Mermaid ID; the [architecture-actors](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-architecture-actors/README.md) check states the grammar.
 - Never reuse an ID. Retiring one leaves a gap, and the check reads git history to enforce that.
 
