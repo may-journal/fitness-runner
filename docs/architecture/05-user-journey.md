@@ -43,6 +43,7 @@ flowchart TB
         install(2 Install and update fitness<br/>Req 0001):::action
         checks[(3 Get the checks a run needs<br/>Req 0002)]:::system
         configure(4 Choose and configure checks<br/>Req 0004):::action
+        packages(12 Judge each package<br/>Req 0010):::action
     end
 
     subgraph daily["Daily work"]
@@ -74,6 +75,8 @@ flowchart TB
     release -->|J| install
     run -->|K| cases
     cases --> run
+    configure -->|L| packages
+    packages --> run
 
     classDef persona fill:#eef2ff,stroke:#6366f1,color:#312e81,stroke-width:2px
     classDef screen fill:#f8fafc,stroke:#64748b,color:#1e293b,stroke-width:2px
@@ -101,6 +104,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 9   | Shared workflows, issue upkeep and Auto-merge.                | System    | Every change is judged, and a ready PR merges with no hand click.  |
 | 10  | A tagged release from `version.txt` with checked archives.    | System    | Users install a release whose files and notes match the repo.      |
 | 11  | Each case a requirement test runs, shared with the checks.    | System    | A requirement step ties to the case that proves it.                |
+| 12  | The `packages` setting naming a monorepo's package folders.   | Action    | Every check gets the package roots from one setting.               |
 | A   | The run needs checks it has not cached.                       | Connector | Only the checks the input reaches download.                        |
 | B   | A check is red.                                               | Connector | The person sees what broke.                                        |
 | C   | The check does not fit the repo.                              | Connector | The repo tunes its checks instead of ignoring red.                 |
@@ -112,3 +116,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | I   | Merged fitness changes reach a release PR.                    | Connector | Every merge ships in the next release.                             |
 | J   | The next install fetches the new release.                     | Connector | The loop closes: a release reaches every repo.                     |
 | K   | A check of the repo's own reads the tests.                    | Connector | It judges each step against the case named for it.                 |
+| L   | The repo is a monorepo of separate packages.                  | Connector | Each package is judged on its own docs and tests.                  |

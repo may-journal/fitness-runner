@@ -52,6 +52,10 @@ MarkerPrefix starts every marker fitness writes into a comment.
 
 NetworkEnv names the variable through which the runner tells each check that GitHub's API host did not answer its probe: `unreachable:<host>`. Unset means the host answered or the run probed nothing.
 
+## PackagesEnv
+
+PackagesEnv lists, one per line, the repo-relative package roots that the packages key of .fitnessrc.json matches, sorted. The runner leaves it unset when the key is unset, and an older check never reads it.
+
 ## ProbeTimeout
 
 ProbeTimeout bounds the runner's one probe of GitHub's API host.
@@ -351,6 +355,10 @@ Offline is the info note naming skipped reads when GitHub's API host is unreacha
 ## OfflineNote
 
 OfflineNote says that host did not answer the probe, through which proxy, and what was skipped without connecting.
+
+## PackageRoots
+
+PackageRoots returns the repo-relative package roots of this run, sorted, for a check that judges each package on its own. Without a packages key the repo root, ".", is the only one.
 
 ## Probe
 

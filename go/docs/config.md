@@ -20,7 +20,7 @@ Defaults holds the value each Config key takes when the config file leaves it un
 
 Config is the shape of .fitnessrc.json, the optional file at a repo's root that tunes which checks run and how strictly they judge.
 
-Fields:
+Fields that choose the checks:
 
 - `policy` selects org or external use, and both default to all checks.
   - External lets a repo pick, replace, and turn off checks.
@@ -32,9 +32,20 @@ Fields:
 - `checkVersions` pins each check the repo uses to a release such as v1.2.3 or a major such as v1.
   - A `"*"` key pins all.
   - Unset or empty, the repo uses every check at its current major.
+
+Fields that shape a run:
+
 - `planApprovers` lists the GitHub logins whose comment saying approve approves a Plan for the pre-push gate, under either policy.
   - Unset, the repo's owner and its org's members may approve, as GitHub reports each comment author's association.
 - `scopedPullRequests` true skips a pull request's full scan, for a huge repo. A push to main still scans every file.
+- `packages` lists globs, such as `"cmd/*"`, that name a monorepo's package folders, so each check judges every package on its own.
+  - A glob matching no folder of tracked files fails the run, naming the glob.
+  - Unset, the repo root is the one package.
+  - The runner hands every check the matched roots in `FITNESS_PACKAGES`, and `checkkit.PackageRoots` reads them.
+
+## PackageRoots
+
+PackageRoots returns the folders of files that the packages globs match, sorted and once each. A glob that is malformed or matches no folder fails, naming it.
 
 ## Load
 
