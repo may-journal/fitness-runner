@@ -32,3 +32,9 @@ requirement tests
          1. THEN the check sees each activity's name
          2. THEN the check sees each activity's location
          3. THEN the check sees the step an activity name opens with
+4. Reads Node cases
+   1. GIVEN Developer has a check of the repo's own that reads tests
+      1. WHEN the repo holds a Vitest or Jest requirement test with case table rows named by a fixed string
+         1. THEN the check sees each case's name
+         2. THEN the check sees each case's location
+         3. THEN the check sees the step a case name opens with
