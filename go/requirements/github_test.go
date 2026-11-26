@@ -882,6 +882,8 @@ func judgeDependabot(t *testing.T, got completedDependabot) (string, int) {
 	rp := standIn(t, map[string][]response{"gh": {
 		{Match: []string{"pulls/7/files", "startswith"}, Stdout: string(file) + "\n"},
 		{Match: []string{"pulls/7/files"}},
+		{Match: []string{"pulls/7/commits"}},
+		{Match: []string{"sha: .head.sha", "pulls?state=open&per_page=100"}},
 		issuePR(t, 31, "Dependabot proposed a bump.\n"),
 	}})
 	pr := map[string]any{"number": 7, "title": got.title, "body": got.body}
