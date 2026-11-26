@@ -267,17 +267,60 @@ func scriptIDOf(title javascript.Token) string {
 }
 
 // caseRows lists the cases inside the requirement test whose call opens at
-// open, in source order. Each is a case table row, such as
-// { name: "0001.1.1 installs", … }.
+// open, in source order. Each is a case table row: an object in an array,
+// such as [{ name: "0001.1.1 installs", … }].
 func caseRows(file, src string, tokens []javascript.Token, open int) []lang.Case {
 	var cases []lang.Case
+	var nest brackets
 	end := closing(tokens, open)
-	for i := open + 1; i+3 < end; i++ {
-		if name, ok := caseName(tokens, i); ok {
-			cases = append(cases, lang.NewCase(name.Text, file, strings.Count(src[:name.Pos], "\n")+1))
+	for i := open + 1; i < end; i++ {
+		if nest.inRow() && i+3 < end {
+			if name, ok := caseName(tokens, i); ok {
+				cases = append(cases, lang.NewCase(name.Text, file, strings.Count(src[:name.Pos], "\n")+1))
+			}
 		}
+		nest = nest.step(tokens, i)
 	}
 	return cases
+}
+
+// row marks an object that is an array's element, in brackets.
+const row = 'r'
+
+// brackets are the open brackets around a token, innermost last: (, [, {
+// or row.
+type brackets []byte
+
+// step returns the brackets around the token after tokens[i].
+func (b brackets) step(tokens []javascript.Token, i int) brackets {
+	t := tokens[i]
+	switch {
+	case b.opensRow(tokens, i):
+		return append(b, row)
+	case oneOf(t, "(", "[", "{"):
+		return append(b, t.Text[0])
+	case oneOf(t, ")", "]", "}") && len(b) > 0:
+		return b[:len(b)-1]
+	}
+	return b
+}
+
+// opensRow reports a brace that opens an array's element.
+func (b brackets) opensRow(tokens []javascript.Token, i int) bool {
+	return isPunct(tokens[i], "{") && b.top() == '[' && oneOf(tokens[i-1], "[", ",")
+}
+
+// top is the innermost open bracket, or 0 for none.
+func (b brackets) top() byte {
+	if len(b) == 0 {
+		return 0
+	}
+	return b[len(b)-1]
+}
+
+// inRow reports a token directly inside a row.
+func (b brackets) inRow() bool {
+	return b.top() == row
 }
 
 // caseName reports whether tokens[i] is a row's name key, and returns its
