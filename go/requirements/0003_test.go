@@ -26,7 +26,7 @@ func Test0003_1(t *testing.T) {
 			out, code := fitness(t, repo, nil)
 			sees(t, out, code, 0, allPassed())
 		}},
-		{"a check that fails", func(t *testing.T) {
+		{"a check that fails: it ends red and the exit code says the bar fails", func(t *testing.T) {
 			t.Parallel()
 			repo := example(t, "happyRepo", map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
 			out, code := fitness(t, repo, nil)

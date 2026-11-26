@@ -109,7 +109,7 @@ func Test0005_1(t *testing.T) {
 
 func Test0005_2(t *testing.T) {
 	cases{
-		{"the hooks and a change that breaks a check", func(t *testing.T) {
+		{"the hooks and a change that breaks a check: the commit is refused with its errors", func(t *testing.T) {
 			t.Parallel()
 			repo, env := hooked(t, nil)
 			write(t, repo, map[string]string{"README.md": readme + "\nSome **bold** text.\n"})

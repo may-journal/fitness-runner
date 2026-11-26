@@ -101,7 +101,7 @@ func Test0004_2(t *testing.T) {
 			out, code = boldPR(t, example(t, "happyRepo", replacing))
 			sees(t, out, code, 0, "fitness: local checks replace built-in markdown-no-bold-italic", "Passed.")
 		}},
-		{"external policy and disabledChecks naming a failing check", func(t *testing.T) {
+		{"external policy and disabledChecks naming a failing check: the run follows it and the turned-off check never runs", func(t *testing.T) {
 			t.Parallel()
 			repo := example(t, "happyRepo", map[string]string{
 				".fitnessrc.json": disabling,

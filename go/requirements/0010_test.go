@@ -13,7 +13,7 @@ func Test0010_1(t *testing.T) {
 			out, code := fitness(t, example(t, "happyRepo", rootsCheck(t, `{"packages": ["./cmd/*", "cmd/b/", "lib", "."]}`)), nil, "check", "roots-rule")
 			sees(t, out, code, 1, "package roots: ., cmd/a, cmd/b, lib")
 		}},
-		{"a `packages` glob that matches no folder, or is malformed", func(t *testing.T) {
+		{"a `packages` glob that matches no folder, or is malformed: the run is red naming it", func(t *testing.T) {
 			t.Parallel()
 			for glob, want := range map[string]string{
 				"Packages/*": `.fitnessrc.json: packages glob "Packages/*" matches no folder of tracked files`,

@@ -14,7 +14,9 @@ checks
 
 ## Requirements
 
-- 0010.1
-  - Given Developer has a monorepo whose `packages` setting names its package folders by glob, or its root as `.`
-    - When the suite runs
-      - Then each check gets the matched roots, a glob matching no folder is red naming it, and no setting keeps the repo root
+1. Gives each check the package roots
+   1. GIVEN Developer has a monorepo whose `packages` setting names its package folders by glob or its root as `.`
+      1. WHEN the suite runs
+         1. THEN each check gets the matched roots
+         2. THEN a glob matching no folder is red naming it
+         3. THEN no setting keeps the repo root

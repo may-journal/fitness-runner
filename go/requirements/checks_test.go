@@ -296,8 +296,8 @@ func vcfTable(rows string) string {
 // acDoc is the requirement doc the architecture fixture opens.
 const acDoc = "docs/requirements/0001-open.md"
 
-// acDocWith is requirement 0001 with one acceptance whose Given is given.
-// The Given sits on line 16.
+// acDocWith is requirement 0001 with one acceptance whose GIVEN is given.
+// The GIVEN sits on line 16.
 func acDocWith(given string) string {
-	return "# 0001 Open\n\n## Why\n\nI open the app.\n\n## Measurement\n\nopens\n-\ntries\n\n## Requirements\n\n- 0001.1\n    - Given " + given + "\n        - When it starts\n            - Then it opens\n"
+	return "# 0001 Open\n\n## Why\n\nI open the app.\n\n## Measurement\n\nopens\n-\ntries\n\n## Requirements\n\n1. Opens the app\n   1. GIVEN " + given + "\n      1. WHEN it starts\n         1. THEN it opens\n"
 }
