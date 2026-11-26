@@ -14,35 +14,38 @@ events
 
 ## Requirements
 
-- 0007.1
-  - Given Developer has a pull request
-    - When fitness runs it in GitHub Actions
-      - Then its changes are judged first, then a full scan judges the rest
-- 0007.2
-  - Given Developer has the shared workflows
-    - When a repo's Actions run fitness
-      - Then they install its pinned checks on the right runner, with a bill I can read
-- 0007.3
-  - Given Developer has an issue with unfinished work
-    - When it or a child closes
-      - Then it stays open or comes back open
-- 0007.4
-  - Given Developer has a parent issue
-    - When its last child closes as completed
-      - Then the parent closes too
-- 0007.5
-  - Given Developer has a new issue that repeats an older one
-    - When dupe-check judges it
-      - Then it points to the first issue, once
-- 0007.6
-  - Given Developer has a ready pull request or stack
-    - When Auto-merge runs
-      - Then it merges, or a comment says why it waits
-- 0007.7
-  - Given Developer has a green release or dev dependency pull request
-    - When Release approve runs
-      - Then it approves only one that changes nothing else, a file its base lacks reading as empty
-- 0007.8
-  - Given Developer has a Dependabot pull request
-    - When dependabot-pr runs
-      - Then it completes the title, body and changelog entry for pr-check
+1. Judges changes before the full scan
+   1. GIVEN Developer has a pull request
+      1. WHEN fitness runs it in GitHub Actions
+         1. THEN its changes are judged first
+         2. THEN a full scan judges the rest
+2. Installs checks on the right runner
+   1. GIVEN Developer has the shared workflows
+      1. WHEN a repo's Actions run fitness
+         1. THEN they install its pinned checks on the right runner
+         2. THEN they show a bill I can read
+3. Keeps unfinished issues open
+   1. GIVEN Developer has an issue with unfinished work
+      1. WHEN it or a child closes
+         1. THEN it stays open or comes back open
+4. Closes a finished parent
+   1. GIVEN Developer has a parent issue
+      1. WHEN its last child closes as completed
+         1. THEN the parent closes too
+5. Points a repeat to the first issue
+   1. GIVEN Developer has a new issue that repeats an older one
+      1. WHEN dupe-check judges it
+         1. THEN it points to the first issue once
+6. Merges a ready pull request
+   1. GIVEN Developer has a ready pull request or stack
+      1. WHEN Auto-merge runs
+         1. THEN it merges or a comment says why it waits
+7. Approves only a lone dependency change
+   1. GIVEN Developer has a green release or dev dependency pull request
+      1. WHEN Release approve runs
+         1. THEN it approves only one that changes nothing else
+         2. THEN a file its base lacks reads as empty
+8. Completes a Dependabot pull request
+   1. GIVEN Developer has a Dependabot pull request
+      1. WHEN dependabot-pr runs
+         1. THEN it completes the title and body and changelog entry for pr-check

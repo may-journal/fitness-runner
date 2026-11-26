@@ -14,15 +14,18 @@ requirement tests
 
 ## Requirements
 
-- 0009.1
-  - Given Developer has a check of the repo's own that reads tests
-    - When the repo holds a Go requirement test with `t.Run` cases and case tables, as slices or maps
-      - Then the check sees each case's name, file and line, and the step a name opens with
-- 0009.2
-  - Given Developer has a check of the repo's own that reads tests
-    - When the repo holds a Java requirement test with dynamic tests and `Named` arguments
-      - Then the check sees each case's name, file and line, and the step a name opens with
-- 0009.3
-  - Given Developer has a check of the repo's own that reads tests
-    - When the repo holds a Swift requirement test with XCTest activities named by a fixed string
-      - Then the check sees each case's name, file and line, and the step a name opens with
+1. Reads Go cases
+   1. GIVEN Developer has a check of the repo's own that reads tests
+      1. WHEN the repo holds a Go requirement test with `t.Run` cases and case tables as slices or maps
+         1. THEN the check sees each case's name and file and line
+         2. THEN the check sees the step a name opens with
+2. Reads Java cases
+   1. GIVEN Developer has a check of the repo's own that reads tests
+      1. WHEN the repo holds a Java requirement test with dynamic tests and `Named` arguments
+         1. THEN the check sees each Java case's name and file and line
+         2. THEN the check sees the step a Java case name opens with
+3. Reads Swift cases
+   1. GIVEN Developer has a check of the repo's own that reads tests
+      1. WHEN the repo holds a Swift requirement test with XCTest activities named by a fixed string
+         1. THEN the check sees each activity's name and file and line
+         2. THEN the check sees the step an activity name opens with

@@ -14,35 +14,43 @@ runs
 
 ## Requirements
 
-- 0003.1
-  - Given Developer has a repo
-    - When fitness runs
-      - Then each check ends green, red or info, and the exit code says whether the bar holds
-- 0003.2
-  - Given Developer asks fitness for something it cannot do
-    - When fitness runs
-      - Then it names what to fix and exits nonzero
-- 0003.3
-  - Given Developer has checks that judge only some files
-    - When I run fitness on a folder, a text or the repo
-      - Then only the checks the input reaches run, and each skip says why
-- 0003.4
-  - Given Developer has slow checks
-    - When fitness runs
-      - Then they overlap, and a check past its stage's total stops, named with its time
-- 0003.5
-  - Given Developer has a run in GitHub Actions
-    - When fitness reports it
-      - Then annotations and the job summary show each finding where it is
-- 0003.6
-  - Given AI agent wants results as data
-    - When fitness runs with `--format=json` or `--json`
-      - Then each finding and each check's cost comes back as JSON
-- 0003.7
-  - Given AI agent has fitness installed
-    - When it runs `fitness list`, `explain`, `docs`, `llms` or `--help`
-      - Then the binary explains each command from its comment and each page from go/docs Markdown, and a test fails drift from the code
-- 0003.8
-  - Given Developer has code with comments
-    - When `fitness comments` or a check reads it
-      - Then comments are judged as prose, and commented-out code is no code
+1. Ends each check with a verdict
+   1. GIVEN Developer has a repo
+      1. WHEN fitness runs
+         1. THEN each check ends green or red or info
+         2. THEN the exit code says whether the bar holds
+2. Names what to fix
+   1. GIVEN Developer asks fitness for something it cannot do
+      1. WHEN fitness runs
+         1. THEN it names what to fix
+         2. THEN it exits nonzero
+3. Runs only the checks an input reaches
+   1. GIVEN Developer has checks that judge only some files
+      1. WHEN I run fitness on a folder or a text or the repo
+         1. THEN only the checks the input reaches run
+         2. THEN each skip says why
+4. Overlaps slow checks
+   1. GIVEN Developer has slow checks
+      1. WHEN fitness runs
+         1. THEN they overlap
+         2. THEN a check past its stage's total stops named with its time
+5. Shows findings in Actions
+   1. GIVEN Developer has a run in GitHub Actions
+      1. WHEN fitness reports it
+         1. THEN annotations and the job summary show each finding where it is
+6. Reports results as JSON
+   1. GIVEN AI agent wants results as data
+      1. WHEN fitness runs with `--format=json` or `--json`
+         1. THEN each finding comes back as JSON
+         2. THEN each check's cost comes back as JSON
+7. Explains itself from the code
+   1. GIVEN AI agent has fitness installed
+      1. WHEN it runs `fitness list` or `explain` or `docs` or `llms` or `--help`
+         1. THEN the binary explains each command from its comment
+         2. THEN the binary explains each page from go/docs Markdown
+         3. THEN a test fails drift from the code
+8. Judges comments as prose
+   1. GIVEN Developer has code with comments
+      1. WHEN `fitness comments` or a check reads it
+         1. THEN comments are judged as prose
+         2. THEN commented-out code is no code

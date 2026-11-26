@@ -14,35 +14,40 @@ releases
 
 ## Requirements
 
-- 0008.1
-  - Given Developer has a `version.txt`
-    - When the release tool runs
-      - Then it prints and verifies that version, or names the mistake
-- 0008.2
-  - Given Developer has a release step
-    - When it passes or fails
-      - Then a GitHub job summary shows its outcome, and only inside Actions
-- 0008.3
-  - Given Developer has built release archives
-    - When `bundle-hashes`, `assemble` or `record` runs
-      - Then each platform's hash and size print, and a changed file fails
-- 0008.4
-  - Given Developer has changelog entry files
-    - When a release writes its notes
-      - Then they list each new entry, newest first, with a working compare link
-- 0008.5
-  - Given Developer has a release pull request
-    - When Release Please runs
-      - Then it links the tracking issue once and skips the steps a release lacks
-- 0008.6
-  - Given Developer has a created release
-    - When Release Please moves the major tags
-      - Then each tag points at its own release, or nothing moves
-- 0008.7
-  - Given Developer has the workflows and actions of this repo
-    - When each step runs its fitness-ci subcommand the way its workflow does
-      - Then the subcommand exists and does the step's job
-- 0008.8
-  - Given Developer has a subcommand that a reusable workflow runs through the fitness-ci action
-    - When the subcommand writes a step output
-      - Then the action declares that output, so the caller reads it
+1. Verifies the release version
+   1. GIVEN Developer has a `version.txt`
+      1. WHEN the release tool runs
+         1. THEN it prints and verifies that version or names the mistake
+2. Summarizes each release step
+   1. GIVEN Developer has a release step
+      1. WHEN it passes or fails
+         1. THEN a GitHub job summary shows its outcome
+         2. THEN the summary shows only inside Actions
+3. Hashes each platform archive
+   1. GIVEN Developer has built release archives
+      1. WHEN `bundle-hashes` or `assemble` or `record` runs
+         1. THEN each platform's hash and size print
+         2. THEN a changed file fails
+4. Writes notes from entry files
+   1. GIVEN Developer has changelog entry files
+      1. WHEN a release writes its notes
+         1. THEN they list each new entry newest first
+         2. THEN they hold a working compare link
+5. Links the tracking issue once
+   1. GIVEN Developer has a release pull request
+      1. WHEN Release Please runs
+         1. THEN it links the tracking issue once
+         2. THEN it skips the steps a release lacks
+6. Moves each major tag to its release
+   1. GIVEN Developer has a created release
+      1. WHEN Release Please moves the major tags
+         1. THEN each tag points at its own release or nothing moves
+7. Runs each workflow subcommand
+   1. GIVEN Developer has the workflows and actions of this repo
+      1. WHEN each step runs its fitness-ci subcommand the way its workflow does
+         1. THEN the subcommand exists
+         2. THEN the subcommand does the step's job
+8. Declares each step output
+   1. GIVEN Developer has a subcommand that a reusable workflow runs through the fitness-ci action
+      1. WHEN the subcommand writes a step output
+         1. THEN the action declares that output so the caller reads it

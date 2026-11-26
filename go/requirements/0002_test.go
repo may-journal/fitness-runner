@@ -18,7 +18,7 @@ import (
 
 func Test0002_1(t *testing.T) {
 	cases{
-		{"a repo whose `.fitnessrc.json` sets no `checkVersions`, or an empty one", func(t *testing.T) {
+		{"a repo whose `.fitnessrc.json` sets no `checkVersions`, or an empty one: it prints each check with its pin", func(t *testing.T) {
 			t.Parallel()
 			for _, config := range []string{"{}", `{"checkVersions": {}}`} {
 				out, code := fitness(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": config}), nil, "check-versions")

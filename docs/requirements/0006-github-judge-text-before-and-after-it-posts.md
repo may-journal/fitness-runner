@@ -14,31 +14,33 @@ posted comments and bodies
 
 ## Requirements
 
-- 0006.1
-  - Given Developer has a draft text
-    - When I run fitness with `--blob` or `comment-check` on it
-      - Then the checks for that text judge it, and the exit code says whether it passes
-- 0006.2
-  - Given Developer has Claude Code drafting a post in a fitness repo
-    - When Claude is about to post it
-      - Then a red comment or body is denied with its findings
-- 0006.3
-  - Given Developer has a comment that breaks the rules on GitHub
-    - When comment-check judges it
-      - Then it replies once saying what to fix, and updates the reply once fixed
-- 0006.4
-  - Given Developer has a Plan
-    - When plan-check judges it
-      - Then the Plan shows one current verdict and label
-- 0006.5
-  - Given Developer has a labeled issue of any kind
-    - When issue-check judges it
-      - Then the issue shows one current verdict against its kind's template
-- 0006.6
-  - Given Developer has a pull request
-    - When pr-check judges it
-      - Then it passes only when the title, body and closed issues are ready
-- 0006.7
-  - Given Developer has a pull request
-    - When pr-check judges its changelog entry
-      - Then it passes only one new entry file that the body links
+1. Judges a draft text
+   1. GIVEN Developer has a draft text
+      1. WHEN I run fitness with `--blob` or `comment-check` on it
+         1. THEN the checks for that text judge it
+         2. THEN the exit code says whether it passes
+2. Denies a red post from Claude
+   1. GIVEN Developer has Claude Code drafting a post in a fitness repo
+      1. WHEN Claude is about to post it
+         1. THEN a red comment or body is denied with its findings
+3. Replies once to a broken comment
+   1. GIVEN Developer has a comment that breaks the rules on GitHub
+      1. WHEN comment-check judges it
+         1. THEN it replies once saying what to fix
+         2. THEN it updates the reply once fixed
+4. Shows one Plan verdict
+   1. GIVEN Developer has a Plan
+      1. WHEN plan-check judges it
+         1. THEN the Plan shows one current verdict and label
+5. Shows one issue verdict
+   1. GIVEN Developer has a labeled issue of any kind
+      1. WHEN issue-check judges it
+         1. THEN the issue shows one current verdict against its kind's template
+6. Passes a ready pull request
+   1. GIVEN Developer has a pull request
+      1. WHEN pr-check judges it
+         1. THEN it passes only when the title and body and closed issues are ready
+7. Passes one new changelog entry
+   1. GIVEN Developer has a pull request
+      1. WHEN pr-check judges its changelog entry
+         1. THEN it passes only one new entry file that the body links

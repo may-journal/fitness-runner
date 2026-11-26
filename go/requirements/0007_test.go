@@ -24,7 +24,7 @@ func Test0007_1(t *testing.T) {
 				boldFinding, "Stage 2 failed", "Files this pull request does not change:", "- README.md (markdown-no-bold-italic)")
 			sees(t, summary, code, 1, "## Stage 1 of 2", "## Stage 2 failed", "- README.md (markdown-no-bold-italic)")
 		}},
-		{"a pull request in a repo whose every file passes", func(t *testing.T) {
+		{"a pull request in a repo whose every file passes: its changes stage and then its full scan stage pass", func(t *testing.T) {
 			t.Parallel()
 			out, code, _ := prChanges(t, prBase(t, nil), noteGuide(t))
 			sees(t, out, code, 0, "Stage 1 of 2:", "Stage 2 of 2:")

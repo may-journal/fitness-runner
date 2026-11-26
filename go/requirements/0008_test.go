@@ -14,7 +14,7 @@ import (
 
 func Test0008_1(t *testing.T) {
 	cases{
-		{"a repo whose `version.txt` says 1.0.1", func(t *testing.T) {
+		{"a repo whose `version.txt` says 1.0.1: it prints that version and its tag", func(t *testing.T) {
 			t.Parallel()
 			repo := releaseToolRepo(t, nil)
 			out, code := releaseToolRun(t, repo, nil, "version")

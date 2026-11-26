@@ -29,7 +29,7 @@ func Test0006_1(t *testing.T) {
 				t.Errorf("duplicate-code needs files and must be skipped, not run:\n%s", out)
 			}
 		}},
-		{"a draft text the chosen checks accept", func(t *testing.T) {
+		{"a draft text the chosen checks accept: the exit code says it passes", func(t *testing.T) {
 			t.Parallel()
 			repo := example(t, "happyRepo", nil)
 			out, code := fitness(t, repo, nil, "--blob="+cleanText, "--checks=cspell,markdown-no-bold-italic,duplicate-code")

@@ -14,31 +14,35 @@ runs
 
 ## Requirements
 
-- 0002.1
-  - Given Developer has a repo's `checkVersions`
-    - When I run `fitness check-versions`
-      - Then it prints each check with its pin, or names a bad pin
-- 0002.2
-  - Given Developer has a repo that pins checks
-    - When I run `fitness-install --with-checks`
-      - Then each pin installs verified into one folder, or a warning names it
-- 0002.3
-  - Given Developer has check programs installed
-    - When fitness runs them
-      - Then it finds each, agrees its protocol, and names how to install any missing one
-- 0002.4
-  - Given Developer has a repo pinning checks, none cached
-    - When I run fitness on some files
-      - Then it downloads and verifies only the checks those files reach
-- 0002.5
-  - Given Developer has a repo pinning checks
-    - When I run `fitness --all`, `fitness prefetch` or a command that needs every check
-      - Then every pinned check downloads up front
-- 0002.6
-  - Given Developer has no network
-    - When I run fitness
-      - Then cached checks run, and each uncached one says it is offline
-- 0002.7
-  - Given Developer has a cache of unused releases
-    - When I run fitness with GitHub answering
-      - Then it deletes only what nothing uses, links or names
+1. Lists each pin
+   1. GIVEN Developer has a repo's `checkVersions`
+      1. WHEN I run `fitness check-versions`
+         1. THEN it prints each check with its pin or names a bad pin
+2. Installs pinned checks
+   1. GIVEN Developer has a repo that pins checks
+      1. WHEN I run `fitness-install --with-checks`
+         1. THEN each pin installs verified into one folder or a warning names it
+3. Finds installed checks
+   1. GIVEN Developer has check programs installed
+      1. WHEN fitness runs them
+         1. THEN it finds each
+         2. THEN it agrees its protocol
+         3. THEN it names how to install any missing one
+4. Downloads only the checks a run reaches
+   1. GIVEN Developer has a repo pinning checks
+   2. GIVEN none are cached
+      1. WHEN I run fitness on some files
+         1. THEN it downloads and verifies only the checks those files reach
+5. Downloads every check when asked
+   1. GIVEN Developer has a repo pinning checks
+      1. WHEN I run `fitness --all` or `fitness prefetch` or a command that needs every check
+         1. THEN every pinned check downloads up front
+6. Runs cached checks offline
+   1. GIVEN Developer has no network
+      1. WHEN I run fitness
+         1. THEN cached checks run
+         2. THEN each uncached one says it is offline
+7. Prunes unused releases
+   1. GIVEN Developer has a cache of unused releases
+      1. WHEN I run fitness with GitHub answering
+         1. THEN it deletes only what nothing uses or links or names
