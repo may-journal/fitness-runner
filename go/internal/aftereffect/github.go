@@ -48,6 +48,9 @@ type Target struct {
 	// EntryFiles are a local branch's changed changelog entry files against
 	// its PR base; nil reads them from GitHub.
 	EntryFiles *[]FileChange `json:"-"`
+	// Commits are a local branch's commits past its PR base; nil reads the
+	// PR's commits from GitHub.
+	Commits *[]string `json:"-"`
 	// Comment is set when the target is one comment on issue or PR Number.
 	Comment *Comment `json:"-"`
 	// State is open or closed, as the event payload and the issue list
@@ -334,6 +337,27 @@ func (g Client) OpenPRs() ([]Target, error) {
 		return nil, err
 	}
 	return decodeLines[Target](out)
+}
+
+// PRHead is an open pull request and the commit its branch ends on.
+type PRHead struct {
+	Number int    `json:"number"`
+	SHA    string `json:"sha"`
+}
+
+// OpenHeads returns each open pull request with its head commit.
+func (g Client) OpenHeads() ([]PRHead, error) {
+	out, err := g.api("--paginate", "--jq", ".[] | {number, sha: .head.sha}", "pulls?state=open&per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	return decodeLines[PRHead](out)
+}
+
+// PRCommits returns the commits of pull request n.
+func (g Client) PRCommits(n int) ([]string, error) {
+	out, err := g.api("--paginate", "--jq", ".[].sha", "pulls/"+strconv.Itoa(n)+"/commits?per_page=100")
+	return strings.Fields(string(out)), err
 }
 
 // DirFiles returns the files pull request n changes directly under dir,

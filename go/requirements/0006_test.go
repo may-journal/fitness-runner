@@ -821,5 +821,26 @@ func Test0006_7(t *testing.T) {
 			sees(t, local, localCode, 1, want)
 			entryUndated(t)
 		}},
+		{"a PR stacked on an open PR, whose entry file its base still lacks", func(t *testing.T) {
+			t.Parallel()
+			lower, own, extra := "changelog/2026-10-10-0900-a-file.md", "changelog/2026-10-10-1000-b-file.md", "changelog/2026-10-10-1000-c-file.md"
+			repo, pr := entryCommits(t, nil, entryFileBody(own),
+				map[string]string{lower: entryFileText(entryFirst, "Feat: add one file.")})
+			stack := entryStack(t, repo, lower)
+			commit(t, repo, map[string]string{"notes.txt": "one line\n"}, "test(app): add notes")
+			out, code := entryActions(t, repo, entryFileBody(own), stack(t)...)
+			sees(t, out, code, 0, "Passed.")
+			entryApply(t, repo, []map[string]string{{own: entryFileText(entryLater, "Test: cover the file.")}})
+			out, code = entryActions(t, repo, entryFileBody(own), stack(t)...)
+			sees(t, out, code, 0, "Passed.")
+			local, localCode := entryLocal(t, repo, pr, stack(t)...)
+			sees(t, local, localCode, 0, "pr-check #1")
+			entryApply(t, repo, []map[string]string{{extra: entryFileText(entryLater, "Docs: name the file.")}})
+			want := "this PR adds 2 changelog entries; keep " + own + " and move the bullets of " + extra + " into it"
+			out, code = entryActions(t, repo, entryFileBody(own), stack(t)...)
+			sees(t, out, code, 1, want)
+			local, localCode = entryLocal(t, repo, pr, stack(t)...)
+			sees(t, local, localCode, 1, want)
+		}},
 	}.run(t)
 }

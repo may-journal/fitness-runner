@@ -284,6 +284,42 @@ func entryApply(t *testing.T, repo string, commits []map[string]string) {
 	}
 }
 
+// entryStack is GitHub's answers for PR 1 stacked on open PR 2, which ends
+// at repo's tip now and adds path. Open PR 3 is a twin: it ends on PR 1's
+// head commit and lists the same files.
+func entryStack(t *testing.T, repo, path string) func(*testing.T) []response {
+	t.Helper()
+	lower := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
+	added, err := json.Marshal(map[string]string{"filename": path, "status": "added"})
+	mustDo(t, err)
+	return func(t *testing.T) []response {
+		t.Helper()
+		head := strings.TrimSpace(gitOutput(t, repo, "rev-parse", "HEAD"))
+		heads := `{"number":1,"sha":"` + head + `"}` + "\n" + `{"number":2,"sha":"` + lower + `"}` + "\n" + `{"number":3,"sha":"` + head + `"}` + "\n"
+		return []response{
+			{Match: []string{"sha: .head.sha", "repos/" + repoPR + "/pulls?state=open&per_page=100"}, Stdout: heads},
+			{Match: []string{"repos/" + repoPR + "/pulls/1/commits"}, Stdout: gitOutput(t, repo, "rev-list", "origin/main..HEAD")},
+			{Match: []string{"repos/" + repoPR + "/pulls/2/files"}, Stdout: string(added) + "\n"},
+			{Match: []string{"repos/" + repoPR + "/pulls/3/files"}, Stdout: entryFilesAnswer(t, repo)},
+		}
+	}
+}
+
+// entryNoStack is GitHub listing no other open PR and PR 1's commits
+// unread, as for a PR that stacks on none.
+var entryNoStack = []response{
+	{Match: []string{"sha: .head.sha", "repos/" + repoPR + "/pulls?state=open&per_page=100"}},
+	{Match: []string{"repos/" + repoPR + "/pulls/1/commits"}},
+}
+
+// gitOutput is what git prints for args in repo.
+func gitOutput(t *testing.T, repo string, args ...string) string {
+	t.Helper()
+	out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).Output()
+	mustDo(t, err)
+	return string(out)
+}
+
 // entryActions runs pr-check in Actions on repo's branch, GitHub answering
 // with the branch's changed entry files, then the released responses.
 func entryActions(t *testing.T, repo, body string, released ...response) (string, int) {
@@ -291,6 +327,7 @@ func entryActions(t *testing.T, repo, body string, released ...response) (string
 	files := response{Match: []string{"repos/" + repoPR + "/pulls/1/files"}}
 	entries := response{Match: []string{"repos/" + repoPR + "/pulls/1/files", "startswith"}, Stdout: entryFilesAnswer(t, repo)}
 	saved := append(released, entries, files, entryNoRelease, issuePR(t, 11, planBody("- [x] Write the tests."), "Plan"))
+	saved = append(saved, entryNoStack...)
 	rp := standIn(t, map[string][]response{"gh": saved})
 	pr := map[string]any{"number": 1, "title": "test(app): add one file", "body": body}
 	env := actionsEvent(t, "pull_request", map[string]any{"action": "synchronize", "pull_request": pr})
@@ -334,6 +371,7 @@ func entryFilesAnswer(t *testing.T, repo string) string {
 func entryLocal(t *testing.T, repo string, pr response, released ...response) (string, int) {
 	t.Helper()
 	saved := append(released, branchGitHub(pr, entryNoRelease, issuePR(t, 11, planBody("- [x] Write the tests."), "Plan"))...)
+	saved = append(saved, entryNoStack...)
 	rp := standIn(t, map[string][]response{"gh": saved})
 	return fitness(t, repo, rp.env, "branch-check")
 }
