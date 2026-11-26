@@ -34,12 +34,13 @@ func requirementDoc(ids ...string) string {
 	return docWith(acceptances(ids...))
 }
 
-// acceptances renders one well-formed chain per ID, nested two spaces deeper
-// at each level as Biome formats it.
+// acceptances renders one numbered acceptance per ID, nested three spaces
+// deeper at each level as Biome formats it.
 func acceptances(ids ...string) string {
 	body := ""
 	for _, id := range ids {
-		body += "- " + id + "\n  - Given two numbers\n    - When I add them\n      - Then I get their sum\n"
+		n := id[strings.LastIndex(id, ".")+1:]
+		body += n + ". Adds numbers " + n + "\n   1. GIVEN two numbers\n      1. WHEN I add them\n         1. THEN I get their sum\n"
 	}
 	return body
 }
