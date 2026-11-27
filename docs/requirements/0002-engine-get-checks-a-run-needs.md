@@ -32,7 +32,8 @@ runs
    1. GIVEN Developer has a repo pinning checks
    2. GIVEN none are cached
       1. WHEN I run fitness on some files
-         1. THEN it downloads and verifies only the checks those files reach
+         1. THEN it downloads only the checks those files reach
+         2. THEN it verifies only the checks those files reach
 5. Downloads every check when asked
    1. GIVEN Developer has a repo pinning checks
       1. WHEN I run `fitness --all` or `fitness prefetch` or a command that needs every check

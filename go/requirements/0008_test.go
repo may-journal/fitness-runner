@@ -14,7 +14,7 @@ import (
 
 func Test0008_1(t *testing.T) {
 	cases{
-		{"a repo whose `version.txt` says 1.0.1: it prints that version and its tag", func(t *testing.T) {
+		{"a repo whose `version.txt` says 1.0.1: it prints that version and its tag, then verifies that version", func(t *testing.T) {
 			t.Parallel()
 			repo := releaseToolRepo(t, nil)
 			out, code := releaseToolRun(t, repo, nil, "version")
@@ -79,7 +79,7 @@ func Test0008_2(t *testing.T) {
 
 func Test0008_3(t *testing.T) {
 	cases{
-		{"GoReleaser build outputs and their checksums", func(t *testing.T) {
+		{"GoReleaser build outputs and their checksums: each platform's hash prints, then its size", func(t *testing.T) {
 			t.Parallel()
 			bundles := releaseToolBundles(releaseToolPlatforms)
 			out, code := releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes")
@@ -343,7 +343,7 @@ func Test0008_6(t *testing.T) {
 }
 
 func Test0008_7(t *testing.T) {
-	refs := cases{{"every step's reference to a subcommand or script", func(t *testing.T) {
+	refs := cases{{"every step's reference to a subcommand or script in a workflow, then in an action", func(t *testing.T) {
 		t.Parallel()
 		subs, named := subcommandOutputs(t), 0
 		for _, file := range yamlFiles(t, "../..") {

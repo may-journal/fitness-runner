@@ -818,7 +818,7 @@ func Test0007_8(t *testing.T) {
 				t.Errorf("want a person's PR left alone, got gh calls %q", rp.calls("gh"))
 			}
 		}},
-		{"a Dependabot pull request that is already complete", func(t *testing.T) {
+		{"a Dependabot pull request that is already complete: it completes the title, then the body, then the changelog entry", func(t *testing.T) {
 			t.Parallel()
 			got, _ := completeDependabot(t, payloadDependabot(t, "dependabot[bot]"), "")
 			pr := payloadDependabot(t, "dependabot[bot]")["pull_request"].(map[string]any)

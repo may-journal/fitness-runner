@@ -34,7 +34,8 @@ commits and pushes
 5. Shows PR findings early
    1. GIVEN Developer has a branch with an open PR
       1. WHEN I run the suite or `branch-check`
-         1. THEN its PR and Plan findings show before Actions runs
+         1. THEN its PR findings show before Actions runs
+         2. THEN its Plan findings show before Actions runs
 6. Checks each pushed branch once
    1. GIVEN Developer has branches whose PRs a push names
       1. WHEN I push them

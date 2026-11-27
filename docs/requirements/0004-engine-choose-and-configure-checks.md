@@ -31,7 +31,8 @@ checks
 4. Rejects settings it cannot use
    1. GIVEN Developer has a check setting or folder fitness cannot use
       1. WHEN the suite starts
-         1. THEN it is red naming the setting and the fix
+         1. THEN it is red naming the setting
+         2. THEN it is red naming the fix
 5. Shows the resolved config
    1. GIVEN AI agent has a repo
       1. WHEN `fitness config` or its schema runs even before any check is installed

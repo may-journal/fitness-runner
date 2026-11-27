@@ -341,7 +341,7 @@ func Test0005_4(t *testing.T) {
 
 func Test0005_5(t *testing.T) {
 	cases{
-		{"file violations and a PR with a bad title", func(t *testing.T) {
+		{"file violations and a PR with a bad title: its PR findings show, then its Plan findings, before Actions runs", func(t *testing.T) {
 			t.Parallel()
 			repo := branchRepo(t, map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
 			pr := branchAnswer(t, repo, "added one file", prPR(11))

@@ -17,7 +17,8 @@ releases
 1. Verifies the release version
    1. GIVEN Developer has a `version.txt`
       1. WHEN the release tool runs
-         1. THEN it prints and verifies that version or names the mistake
+         1. THEN it prints that version or names the mistake
+         2. THEN it verifies that version or names the mistake
 2. Summarizes each release step
    1. GIVEN Developer has a release step
       1. WHEN it passes or fails
@@ -26,8 +27,9 @@ releases
 3. Hashes each platform archive
    1. GIVEN Developer has built release archives
       1. WHEN `bundle-hashes` or `assemble` or `record` runs
-         1. THEN each platform's hash and size print
-         2. THEN a changed file fails
+         1. THEN each platform's hash prints
+         2. THEN each platform's size prints
+         3. THEN a changed file fails
 4. Writes notes from entry files
    1. GIVEN Developer has changelog entry files
       1. WHEN a release writes its notes
@@ -43,7 +45,8 @@ releases
       1. WHEN Release Please moves the major tags
          1. THEN each tag points at its own release or nothing moves
 7. Runs each workflow subcommand
-   1. GIVEN Developer has the workflows and actions of this repo
+   1. GIVEN Developer has the workflows of this repo
+   2. GIVEN Developer has the actions of this repo
       1. WHEN each step runs its fitness-ci subcommand the way its workflow does
          1. THEN the subcommand exists
          2. THEN the subcommand does the step's job

@@ -31,7 +31,8 @@ posted comments and bodies
 4. Shows one Plan verdict
    1. GIVEN Developer has a Plan
       1. WHEN plan-check judges it
-         1. THEN the Plan shows one current verdict and label
+         1. THEN the Plan shows one current verdict
+         2. THEN the Plan shows one current label
 5. Shows one issue verdict
    1. GIVEN Developer has a labeled issue of any kind
       1. WHEN issue-check judges it
@@ -39,7 +40,9 @@ posted comments and bodies
 6. Passes a ready pull request
    1. GIVEN Developer has a pull request
       1. WHEN pr-check judges it
-         1. THEN it passes only when the title and body and closed issues are ready
+         1. THEN it passes only if the title is ready
+         2. THEN it passes only if the body is ready
+         3. THEN it passes only if the closed issues are ready
 7. Passes one new changelog entry
    1. GIVEN Developer has a pull request
       1. WHEN pr-check judges its changelog entry

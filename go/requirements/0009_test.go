@@ -7,7 +7,7 @@ import (
 
 func Test0009_1(t *testing.T) {
 	cases{
-		{"t.Run cases, nested ones, a named case table, an anonymous one and rows without a name: the check sees each case name, file and line and the step a name opens with", func(t *testing.T) {
+		{"t.Run cases, nested ones, a named case table, an anonymous one and rows without a name: the check sees each case name, then its location, then the step a name opens with", func(t *testing.T) {
 			t.Parallel()
 			suite := "package cases\n\nimport \"testing\"\n\n" +
 				"type edgeCase struct {\n\tname string\n\trun  func(t *testing.T)\n}\n\n" +
@@ -47,7 +47,7 @@ func Test0009_1(t *testing.T) {
 
 func Test0009_2(t *testing.T) {
 	cases{
-		{"dynamic tests, a dynamic container, Named arguments, a Java-only escape, a text block and other calls: the check sees each case name, file and line and the step a name opens with", func(t *testing.T) {
+		{"dynamic tests, a dynamic container, Named arguments, a Java-only escape, a text block and other calls: the check sees each case name, then its location, then the step a name opens with", func(t *testing.T) {
 			t.Parallel()
 			suite := "package app;\n\nimport static org.junit.jupiter.api.DynamicTest.dynamicTest;\n\nimport org.junit.jupiter.api.*;\n\n" +
 				"class CasesTest {\n" +
@@ -79,7 +79,7 @@ func Test0009_2(t *testing.T) {
 
 func Test0009_3(t *testing.T) {
 	cases{
-		{"named activities, a nested one, a computed name, a name inside a string and tests without a body: the check sees each activity name, file and line and the step a name opens with", func(t *testing.T) {
+		{"named activities, a nested one, a computed name, a name inside a string and tests without a body: the check sees each activity name, then its location, then the step a name opens with", func(t *testing.T) {
 			t.Parallel()
 			suite := "import XCTest\n\nfinal class CasesTests: XCTestCase {\n" +
 				"    func test0001_1() {\n" +

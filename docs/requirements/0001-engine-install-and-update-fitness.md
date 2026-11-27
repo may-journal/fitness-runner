@@ -17,7 +17,8 @@ installs
 1. Runs the release it was asked for
    1. GIVEN Developer has any folder
       1. WHEN I run `fitness-install` with its options
-         1. THEN it runs the verified release or says why it cannot and exits 1
+         1. THEN it runs the verified release or says why it cannot
+         2. THEN it exits 1 if it cannot run the release
 2. Publishes the install to a GitHub job
    1. GIVEN Developer has a GitHub job
       1. WHEN it runs `fitness-install --github-action`
