@@ -407,7 +407,7 @@ func Test0006_3(t *testing.T) {
 
 func Test0006_4(t *testing.T) {
 	cases{
-		{"a Plan that follows the template", func(t *testing.T) {
+		{"a Plan that follows the template: the Plan shows one current verdict, then one current label", func(t *testing.T) {
 			t.Parallel()
 			out, code, rp := judgePlan(t, planBody("- [ ] Write the tests."), planGitHub(""))
 			sees(t, out, code, 0, "Passed.")
@@ -653,7 +653,7 @@ func Test0006_5(t *testing.T) {
 
 func Test0006_6(t *testing.T) {
 	cases{
-		{"a draft PR that follows the template, linking its changelog entry, and closes a finished Plan", func(t *testing.T) {
+		{"a draft PR that follows the template, linking its changelog entry, and closes a finished Plan: it passes only if the title, then the body, then the closed issues are ready", func(t *testing.T) {
 			t.Parallel()
 			out, code := judgePR(t, "test(app): add one file", prPR(11), issuePR(t, 11, planPR("- [x] Write the tests."), "Plan"))
 			sees(t, out, code, 0, "Passed.")

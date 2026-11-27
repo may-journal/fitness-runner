@@ -145,7 +145,7 @@ func Test0004_3(t *testing.T) {
 
 func Test0004_4(t *testing.T) {
 	cases{
-		{"a check setting whose directory or check is missing, outside the repo, or named like a subcommand", func(t *testing.T) {
+		{"a check setting whose directory or check is missing, outside the repo, or named like a subcommand: it is red naming the setting, then naming the fix", func(t *testing.T) {
 			t.Parallel()
 			for setting, want := range map[string]string{
 				`{"localChecks": "checks"}`:             `fitness setup: .fitnessrc.json localChecks directory "checks" does not exist`,

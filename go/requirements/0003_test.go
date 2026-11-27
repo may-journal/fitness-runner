@@ -490,7 +490,7 @@ func Test0003_4(t *testing.T) {
 
 func Test0003_5(t *testing.T) {
 	cases{
-		{"a finding that names a file and line", func(t *testing.T) {
+		{"a finding that names a file and line: annotations show it, then the job summary does", func(t *testing.T) {
 			t.Parallel()
 			out, code, _ := inActions(t, example(t, "happyRepo", misspelled(1)))
 			sees(t, out, code, 1, "::error file=README.md,line=9,col=5,title=cspell (unknown-word)::Unknown word (zorbleflux)")

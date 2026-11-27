@@ -48,4 +48,6 @@ events
 8. Completes a Dependabot pull request
    1. GIVEN Developer has a Dependabot pull request
       1. WHEN dependabot-pr runs
-         1. THEN it completes the title and body and changelog entry for pr-check
+         1. THEN it completes the title for pr-check
+         2. THEN it completes the body for pr-check
+         3. THEN it completes the changelog entry for pr-check

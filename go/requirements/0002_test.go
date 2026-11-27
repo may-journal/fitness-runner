@@ -320,7 +320,7 @@ func Test0002_4(t *testing.T) {
 			})
 			sees(t, bare, code, 1, "no check is installed, and --no-builtins turns the built-in checks off")
 		}},
-		{"a repo pinning a Markdown, a Go and a Swift check, and one with no fields, none cached", func(t *testing.T) {
+		{"a repo pinning a Markdown, a Go and a Swift check, and one with no fields, none cached: it downloads only the checks those files reach, then verifies only those", func(t *testing.T) {
 			t.Parallel()
 			for _, c := range []struct {
 				staged  map[string]string

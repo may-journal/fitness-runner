@@ -18,7 +18,7 @@ func Test0001_1(t *testing.T) {
 			out, code := fiRun(t, t.TempDir(), nil, "--help")
 			sees(t, out, code, 0, "Usage of fitness-install", "-github-action", "-install-hook", "-install-only", "-version")
 		}},
-		{"options the installer cannot combine or read: it says why it cannot and exits 1", func(t *testing.T) {
+		{"options the installer cannot combine or read: it says why it cannot, then exits 1", func(t *testing.T) {
 			t.Parallel()
 			cases := map[string][]string{
 				"flag provided but not defined: -unknown":                            {"--unknown"},

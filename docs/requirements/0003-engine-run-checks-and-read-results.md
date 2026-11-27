@@ -37,7 +37,8 @@ runs
 5. Shows findings in Actions
    1. GIVEN Developer has a run in GitHub Actions
       1. WHEN fitness reports it
-         1. THEN annotations and the job summary show each finding where it is
+         1. THEN annotations show each finding where it is
+         2. THEN the job summary shows each finding where it is
 6. Reports results as JSON
    1. GIVEN AI agent wants results as data
       1. WHEN fitness runs with `--format=json` or `--json`
