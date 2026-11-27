@@ -14,27 +14,11 @@ requirement tests
 
 ## Requirements
 
-1. Reads Go cases
+1. Removed in 2026.11.27.2030: moved to go/pkg/lang/golang as 0001.1
+2. Removed in 2026.11.27.2030: moved to go/pkg/lang/java as 0001.1
+3. Removed in 2026.11.27.2030: moved to go/pkg/lang/swift as 0001.1
+4. Removed in 2026.11.27.2030: moved to go/pkg/lang/node as 0001.1
+5. Lists each language's cases in one scan
    1. GIVEN Developer has a check of the repo's own that reads tests
-      1. WHEN the repo holds a Go requirement test with `t.Run` cases plus case tables as slices or maps
-         1. THEN the check sees each case's name
-         2. THEN the check sees each case's location
-         3. THEN the check sees the step a name opens with
-2. Reads Java cases
-   1. GIVEN Developer has a check of the repo's own that reads tests
-      1. WHEN the repo holds a Java requirement test with dynamic tests plus `Named` arguments
-         1. THEN the check sees each Java case's name
-         2. THEN the check sees each Java case's location
-         3. THEN the check sees the step a Java case name opens with
-3. Reads Swift cases
-   1. GIVEN Developer has a check of the repo's own that reads tests
-      1. WHEN the repo holds a Swift requirement test with XCTest activities named by a fixed string
-         1. THEN the check sees each activity's name
-         2. THEN the check sees each activity's location
-         3. THEN the check sees the step an activity name opens with
-4. Reads Node cases
-   1. GIVEN Developer has a check of the repo's own that reads tests
-      1. WHEN the repo holds a Vitest or Jest requirement test whose case rows are array objects named by a fixed string
-         1. THEN the check sees each case's name
-         2. THEN the check sees each case's location
-         3. THEN the check sees the step a case name opens with
+      1. WHEN the repo holds requirement tests in two languages whose modules read cases
+         1. THEN the shared scan lists each test's cases under it

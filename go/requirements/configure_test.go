@@ -14,6 +14,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/acceptance"
 )
 
 // allPassedWith is the summary of an all-passing run with extra checks beyond
@@ -26,7 +28,7 @@ func allPassedWith(extra int) string {
 const disabling = `{"disabledChecks": ["markdown-no-bold-italic"]}` + "\n"
 
 // passing is a local check's verdict that judged one file and found nothing.
-const passing = `{"ok": true, "errors": [], "filesChecked": 1}`
+const passing = acceptance.Passing
 
 // localCheck is a repo whose checks directory holds one local check, name,
 // that follows the check protocol and prints verdict.
@@ -339,7 +341,7 @@ func goTestFitness(t *testing.T, repo string) (string, bool) {
 }
 
 // houseReadme is a folder check's README: a title, the rule, and the fix.
-const houseReadme = "# House rule\n\nKeeps the house in order. Each room stays tidy.\n\n## Fix\n\nTidy the room the error names.\n"
+const houseReadme = acceptance.HouseReadme
 
 // shellCheck is a repo with one shell check, name, and a README.
 // The check answers --describe with describe, else ignores the handshake, and prints verdict; an empty verdict hangs.

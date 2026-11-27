@@ -1,5 +1,5 @@
 #!/bin/sh
-# Runs shard SHARD of COUNT of the requirement tests, so CI splits them across jobs.
+# Runs shard SHARD of COUNT of the requirement tests, the root's and each language package's, so CI splits them across jobs.
 # Usage: sh tests/requirements-shard.sh SHARD COUNT [go test flags...]; exit 2
 # when SHARD is out of range or holds no tests.
 set -eu
@@ -14,12 +14,12 @@ if [ "$shard" -lt 1 ] || [ "$shard" -gt "$count" ]; then
 fi
 FITNESS_CHECKS_DIR="$(sh tests/install-checks.sh)"
 export FITNESS_CHECKS_DIR
-names="$(go -C go test ./requirements -list '^Test' |
-  grep '^Test' | sort |
+names="$(go -C go test ./requirements ./pkg/lang/.../requirements -list '^Test' |
+  grep '^Test' | sort -u |
   awk -v shard="$shard" -v count="$count" '(NR - shard) % count == 0' |
   paste -sd '|' -)"
 if [ -z "$names" ]; then
   echo "requirements-shard: shard $shard of $count holds no tests" >&2
   exit 2
 fi
-exec go -C go test ./requirements -count=1 -parallel 32 -run "^($names)\$" "$@"
+exec go -C go test ./requirements ./pkg/lang/.../requirements -count=1 -parallel 32 -run "^($names)\$" "$@"

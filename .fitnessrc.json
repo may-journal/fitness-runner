@@ -17,5 +17,12 @@
   },
   "checkVersions": {
     "*": "v1"
-  }
+  },
+  "packages": [
+    ".",
+    "go/pkg/lang/golang",
+    "go/pkg/lang/java",
+    "go/pkg/lang/node",
+    "go/pkg/lang/swift"
+  ]
 }
