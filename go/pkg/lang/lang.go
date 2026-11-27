@@ -79,10 +79,29 @@ type Test struct {
 	Loc string
 	// File is the path of the file declaring the test.
 	File string
+	// Groups are the groups declared around the test, outermost first, in a
+	// language whose Tests is Grouped.
+	Groups []Group `json:",omitempty"`
+	// Table marks a test declared once for many rows, as it.each(rows) is,
+	// so no reader can count how often its ID runs.
+	Table bool `json:",omitempty"`
+}
+
+// Group is one named group of tests, such as a describe call.
+type Group struct {
+	// Title is the group's title, or "" when it is no plain string.
+	Title string
+	// Loc is where the group is declared, as file:line.
+	Loc string
+	// Table marks a group declared once for many rows, as describe.each is.
+	Table bool `json:",omitempty"`
 }
 
 // Tests is how a module finds its requirement tests.
 type Tests struct {
+	// Grouped says the language declares tests inside named groups, which
+	// Scan lists in each Test's Groups.
+	Grouped bool
 	// Scan, when set, reads the repo's tests and the files holding them,
 	// and reports whether the repo is written in the language. A module
 	// without it finds no requirement tests yet.

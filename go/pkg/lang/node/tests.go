@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/pkg/comments"
@@ -12,7 +13,7 @@ import (
 
 // Tests finds vitest and jest tests whose title opens with an acceptance ID, as
 // in test("0001.1 saves offline", …).
-var Tests = lang.Tests{Scan: scanTests, Name: func(id string) string { return `test("` + id + ` …")` }, Reads: ScriptTest}
+var Tests = lang.Tests{Grouped: true, Scan: scanTests, Name: func(id string) string { return `test("` + id + ` …")` }, Reads: ScriptTest}
 
 // scanTests reads every script test file's tests; a repo with any script
 // is written in TypeScript or JavaScript.
@@ -29,11 +30,33 @@ var (
 	scriptTestID = regexp.MustCompile(`^(\d{4})\.([1-9]\d*)(?:\s|$)`)
 	// testFuncs are the vitest and jest functions that declare one test.
 	testFuncs = map[string]bool{"it": true, "test": true}
-	// testModifiers may follow it or test before its call, as in it.skip(…).
-	testModifiers = map[string]bool{"skip": true, "only": true, "todo": true, "concurrent": true, "sequential": true, "fails": true}
+	// groupFuncs are the vitest and jest functions that declare one group.
+	groupFuncs = map[string]bool{"describe": true}
+	// testModifiers may follow it, test or describe before its call, as in
+	// it.skip(…).
+	testModifiers = map[string]bool{"skip": true, "only": true, "todo": true, "concurrent": true, "sequential": true, "fails": true, "shuffle": true}
 	// tableModifiers take their own arguments first, as in it.each(rows)(…).
 	tableModifiers = map[string]bool{"each": true, "for": true, "skipIf": true, "runIf": true}
+	// rowModifiers are the table modifiers that run one declaration per row.
+	rowModifiers = map[string]bool{"each": true, "for": true}
 )
+
+// declared is one it, test or describe call.
+type declared struct {
+	// title is the call's first argument.
+	title javascript.Token
+	// open is the index of the parenthesis that opens the arguments.
+	open int
+	// table says each or for declares the call once for many rows.
+	table bool
+}
+
+// openGroup is a describe call the reader is inside.
+type openGroup struct {
+	lang.Group
+	// end is the index of the parenthesis that closes the call.
+	end int
+}
 
 // scanScripts reads the code view of every vitest or jest test file and
 // returns its tests.
@@ -61,40 +84,75 @@ func scriptTestFiles(scripts []string) []string {
 	return out
 }
 
-// scriptFileTests returns each it or test call in one file. Comments and
-// strings are tokens of their own, so a call inside them is no test, and
-// describe titles never name a test.
+// scriptFileTests returns each it or test call in one file, with the
+// describe calls around it. Comments and strings are tokens of their own, so
+// a call inside them is no test, and describe titles never name a test.
 func scriptFileTests(file, src string) []lang.Test {
 	tokens := javascript.Lex(src)
+	loc := func(i int) string { return fmt.Sprintf("%s:%d", file, strings.Count(src[:tokens[i].Pos], "\n")+1) }
 	var tests []lang.Test
+	var open []openGroup
 	for i := range tokens {
-		if title, ok := testCall(tokens, i); ok {
-			loc := fmt.Sprintf("%s:%d", file, strings.Count(src[:tokens[i].Pos], "\n")+1)
-			name := tokens[i].Text + "(" + shownTitle(title) + ")"
-			tests = append(tests, lang.Test{Name: name, ID: scriptIDOf(title), Loc: loc, File: file})
+		open = slices.DeleteFunc(open, func(g openGroup) bool { return g.end < i })
+		if d, ok := declaration(tokens, i, groupFuncs); ok {
+			open = append(open, openGroup{Group: lang.Group{Title: groupTitle(tokens, d), Loc: loc(i), Table: d.table}, end: closing(tokens, d.open)})
+		}
+		if d, ok := testCall(tokens, i); ok {
+			name := tokens[i].Text + "(" + shownTitle(d.title) + ")"
+			tests = append(tests, lang.Test{Name: name, ID: scriptIDOf(d.title), Loc: loc(i), File: file, Groups: groupsOf(open), Table: d.table})
 		}
 	}
 	return tests
 }
 
-// testCall reports whether tokens[i] starts a call declaring one test and
-// returns its title, which must be the first argument.
-func testCall(tokens []javascript.Token, i int) (javascript.Token, bool) {
-	if !namesTest(tokens, i) {
-		return javascript.Token{}, false
+// groupsOf lists the open groups, outermost first, or nil for none.
+func groupsOf(open []openGroup) []lang.Group {
+	var groups []lang.Group
+	for _, g := range open {
+		groups = append(groups, g.Group)
 	}
-	open, ok := callOpen(tokens, i+1)
-	if !ok || !takesArguments(tokens, open) {
-		return javascript.Token{}, false
-	}
-	return titleAt(tokens, open+1)
+	return groups
 }
 
-// namesTest reports whether tokens[i] is it or test as a name of its own,
-// not a property or a declaration.
-func namesTest(tokens []javascript.Token, i int) bool {
+// groupTitle is a describe call's title, or "" when its first argument is
+// no whole string.
+func groupTitle(tokens []javascript.Token, d declared) string {
+	title, whole := titleAt(tokens, d.open+1)
+	if !whole {
+		return ""
+	}
+	return title.Text
+}
+
+// testCall reports whether tokens[i] starts a call declaring one test,
+// whose title must be the whole first argument.
+func testCall(tokens []javascript.Token, i int) (declared, bool) {
+	d, ok := declaration(tokens, i, testFuncs)
+	if !ok {
+		return d, false
+	}
+	_, whole := titleAt(tokens, d.open+1)
+	return d, whole
+}
+
+// declaration reports whether tokens[i] starts a call of one of funcs with
+// arguments, and returns it.
+func declaration(tokens []javascript.Token, i int, funcs map[string]bool) (declared, bool) {
+	if !names(tokens, i, funcs) {
+		return declared{}, false
+	}
+	open, table, ok := callOpen(tokens, i+1)
+	if !ok || !takesArguments(tokens, open) {
+		return declared{}, false
+	}
+	return declared{title: tokens[open+1], open: open, table: table}, true
+}
+
+// names reports whether tokens[i] is one of funcs as a name of its own, not
+// a property or a declaration.
+func names(tokens []javascript.Token, i int, funcs map[string]bool) bool {
 	t := tokens[i]
-	return t.Kind == javascript.Ident && testFuncs[t.Text] && (i == 0 || !isMemberOrDecl(tokens[i-1]))
+	return t.Kind == javascript.Ident && funcs[t.Text] && (i == 0 || !isMemberOrDecl(tokens[i-1]))
 }
 
 // takesArguments reports a call at open with at least one argument that is
@@ -115,12 +173,14 @@ func isMemberOrDecl(t javascript.Token) bool {
 }
 
 // callOpen skips the modifiers after it or test and returns the index of
-// the parenthesis that opens the call taking the title.
-func callOpen(tokens []javascript.Token, i int) (int, bool) {
+// the parenthesis that opens the call taking the title. table says each or
+// for was among them.
+func callOpen(tokens []javascript.Token, i int) (open int, table, ok bool) {
 	for isModifier(tokens, i) {
+		table = table || rowModifiers[tokens[i+1].Text]
 		i = afterModifier(tokens, i)
 	}
-	return i, i < len(tokens) && isPunct(tokens[i], "(")
+	return i, table, i < len(tokens) && isPunct(tokens[i], "(")
 }
 
 // isModifier reports whether tokens[i:] is a known modifier such as .skip.

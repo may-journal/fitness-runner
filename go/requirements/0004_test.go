@@ -374,3 +374,34 @@ func cannotJudge(more string) map[string]string {
 		"checks/fitness-check-house-rule": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"house-rule\"}'; exit 0; }\nexit 3\n",
 	}
 }
+
+func Test0004_8(t *testing.T) {
+	cases{
+		{"a Vitest suite with a describe, a nested describe.each, an it.each, a test outside any group and a computed title: the check sees each describe group and each table is marked", func(t *testing.T) {
+			t.Parallel()
+			suite := "describe('0001 Install', () => {\n  it('0001.1 installs', () => {})\n  describe.each(rows)('nested %s', () => {\n" +
+				"    it.each(rows)('0001.2 adds %d', () => {})\n  })\n})\ntest('0002.1 alone', () => {})\n" +
+				"describe('save ' + mode, () => {\n  it('0003.1 saves', () => {})\n})\n"
+			reader := "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"scan-reader\", \"tests\": true}'; exit 0; }\n" +
+				"cat \"$FITNESS_TEST_SCAN\" >&2\necho '" + passing + "'\n"
+			repo := example(t, "happyRepo", map[string]string{
+				"tests/service.test.ts":         suite,
+				"fitness/scan-reader/README.md": houseReadme,
+				"fitness/scan-reader/check":     reader,
+			})
+			out, _ := fitness(t, repo, nil, "--all")
+			at := func(line string) string { return `"Loc":"tests/service.test.ts:` + line + `"` }
+			install := `{"Title":"0001 Install",` + at("1")
+			for _, want := range []string{
+				`"ID":"0001.1",` + at("2") + `,"File":"tests/service.test.ts","Groups":[` + install + `}],"Module"`,
+				`"Groups":[` + install + `},{"Title":"nested %s",` + at("3") + `,"Table":true}],"Table":true,"Module"`,
+				`"ID":"0002.1",` + at("7") + `,"File":"tests/service.test.ts","Module"`,
+				`"Groups":[{"Title":"",` + at("8") + `}],"Module"`,
+			} {
+				if !strings.Contains(out, want) {
+					t.Errorf("the shared scan must hold %s, got:\n%s", want, out)
+				}
+			}
+		}},
+	}.run(t)
+}
