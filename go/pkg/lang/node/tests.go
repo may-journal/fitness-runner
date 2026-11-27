@@ -99,7 +99,11 @@ func scriptFileTests(file, src string) []lang.Test {
 		}
 		if d, ok := testCall(tokens, i); ok {
 			name := tokens[i].Text + "(" + shownTitle(d.title) + ")"
-			tests = append(tests, lang.Test{Name: name, ID: scriptIDOf(d.title), Loc: loc(i), File: file, Groups: groupsOf(open), Table: d.table})
+			test := lang.Test{Name: name, ID: scriptIDOf(d.title), Loc: loc(i), File: file, Groups: groupsOf(open), Table: d.table}
+			if test.ID != "" {
+				test.Cases = caseRows(file, src, tokens, d.open)
+			}
+			tests = append(tests, test)
 		}
 	}
 	return tests
@@ -260,4 +264,84 @@ func scriptIDOf(title javascript.Token) string {
 		return ""
 	}
 	return m[1] + "." + m[2]
+}
+
+// caseRows lists the cases inside the requirement test whose call opens at
+// open, in source order. Each is a case table row: an object in an array,
+// such as [{ name: "0001.1.1 installs", … }].
+func caseRows(file, src string, tokens []javascript.Token, open int) []lang.Case {
+	var cases []lang.Case
+	var nest brackets
+	end := closing(tokens, open)
+	for i := open + 1; i < end; i++ {
+		if nest.inRow() && i+3 < end {
+			if name, ok := caseName(tokens, i); ok {
+				cases = append(cases, lang.NewCase(name.Text, file, strings.Count(src[:name.Pos], "\n")+1))
+			}
+		}
+		nest = nest.step(tokens, i)
+	}
+	return cases
+}
+
+// row marks an object that is an array's element, in brackets.
+const row = 'r'
+
+// brackets are the open brackets around a token, innermost last: (, [, {
+// or row.
+type brackets []byte
+
+// step returns the brackets around the token after tokens[i].
+func (b brackets) step(tokens []javascript.Token, i int) brackets {
+	t := tokens[i]
+	switch {
+	case b.opensRow(tokens, i):
+		return append(b, row)
+	case oneOf(t, "(", "[", "{"):
+		return append(b, t.Text[0])
+	case oneOf(t, ")", "]", "}") && len(b) > 0:
+		return b[:len(b)-1]
+	}
+	return b
+}
+
+// opensRow reports a brace that opens an array's element.
+func (b brackets) opensRow(tokens []javascript.Token, i int) bool {
+	return isPunct(tokens[i], "{") && b.top() == '[' && oneOf(tokens[i-1], "[", ",")
+}
+
+// top is the innermost open bracket, or 0 for none.
+func (b brackets) top() byte {
+	if len(b) == 0 {
+		return 0
+	}
+	return b[len(b)-1]
+}
+
+// inRow reports a token directly inside a row.
+func (b brackets) inRow() bool {
+	return b.top() == row
+}
+
+// caseName reports whether tokens[i] is a row's name key, and returns its
+// value. The key opens the object or follows a comma, and its value is a
+// fixed string that ends the property.
+func caseName(tokens []javascript.Token, i int) (javascript.Token, bool) {
+	value := tokens[i+2]
+	return value, isNameKey(tokens[i]) && oneOf(tokens[i-1], "{", ",") && isPunct(tokens[i+1], ":") && isFixed(value) && oneOf(tokens[i+3], ",", "}")
+}
+
+// isNameKey reports the key name, plain or quoted.
+func isNameKey(t javascript.Token) bool {
+	return t.Text == "name" && (t.Kind == javascript.Ident || t.Kind == javascript.String)
+}
+
+// isFixed reports a string with no ${…} in it.
+func isFixed(t javascript.Token) bool {
+	return t.Kind == javascript.String && t.Lit
+}
+
+// oneOf reports whether t is one of the punctuation marks marks.
+func oneOf(t javascript.Token, marks ...string) bool {
+	return slices.ContainsFunc(marks, func(s string) bool { return isPunct(t, s) })
 }

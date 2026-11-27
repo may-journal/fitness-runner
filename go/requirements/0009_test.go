@@ -105,6 +105,28 @@ func Test0009_3(t *testing.T) {
 	}.run(t)
 }
 
+func Test0009_4(t *testing.T) {
+	cases{
+		{"case table rows with plain, quoted and template keys, computed names, other keys, a ternary, objects outside an array, a nested object and a test without an ID: the check sees each case name, then its location, then the step a name opens with", func(t *testing.T) {
+			t.Parallel()
+			suite := "describe('0001 Install', () => {\n  it('0001.1 installs', () => {\n    const rows = [\n" +
+				"      { name: '0001.1.1 installs', want: 1 },\n      { \"name\": \"keyed\" },\n      { want: 2, name: `0001.1.2: raw` },\n" +
+				"      { name: `built ${n}` }, { name: label }, { name: 'a' + b }, { id: 'no name' },\n    ]\n" +
+				"    const shown = ok ? name : 'not a case'\n" +
+				"    screen.getByRole('button', { name: 'Save' }); expect(user).toEqual({ name: 'Ann' }); run([{ name: 'row', input: { name: 'inner' } }])\n  })\n" +
+				"  it('helper', () => {\n    run([{ name: '0001.1.3 outside' }])\n  })\n})\n"
+			out := sharedScan(t, map[string]string{"tests/cases.test.ts": suite})
+			at := func(line string) string { return `"Loc":"tests/cases.test.ts:` + line + `"` }
+			wants(t, out, `"ID":"0001.1","Cases":[`+
+				`{"Name":"0001.1.1 installs","Step":"0001.1.1",`+at("4")+`},`+
+				`{"Name":"keyed",`+at("5")+`},`+
+				`{"Name":"0001.1.2: raw","Step":"0001.1.2",`+at("6")+`},`+
+				`{"Name":"row",`+at("10")+`}],`+at("2"),
+				`"Name":"it(\"helper\")","ID":"",`+at("12"))
+		}},
+	}.run(t)
+}
+
 // sharedScan runs every check on a repo holding files, and returns what
 // fitness shows. The repo's own scan-reader check prints the test scan
 // the runner shares.
