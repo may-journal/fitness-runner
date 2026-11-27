@@ -4,155 +4,47 @@ package requirements
 
 import (
 	"errors"
-	"net/http"
-	"net/http/httptest"
-	"net/http/httputil"
-	"net/url"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
-	"sync"
-	"syscall"
 	"testing"
-	"time"
-)
 
-// ansi matches terminal color codes, which a reader does not see as text.
-var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+	"github.com/may-journal/fitness-runner/go/internal/acceptance"
+)
 
 // cases is an acceptance's table: each case is one situation the acceptance
 // covers, named by its Given.
-type cases []struct {
-	name string
-	run  func(*testing.T)
-}
+type cases acceptance.Cases
 
 // run runs each case in parallel as its own t.Run of the acceptance's test.
 func (cs cases) run(t *testing.T) {
 	t.Helper()
-	t.Parallel()
-	for _, c := range cs {
-		t.Run(c.name, c.run)
-	}
+	acceptance.Cases(cs).Run(t)
 }
 
 // runAlone runs the cases like run, but before the parallel acceptances start.
-// A case that times the product skips t.Parallel, so it runs on an idle machine.
 func (cs cases) runAlone(t *testing.T) {
 	t.Helper()
-	for _, c := range cs {
-		t.Run(c.name, c.run)
-	}
+	acceptance.Cases(cs).RunAlone(t)
 }
 
-// example copies tests/examples/<name> into a fresh directory, writes the
-// Given's files over it, and commits it as a user's repo would be. Each test
-// skips first, before any setup, when no candidate installer is set.
-func example(t *testing.T, name string, files map[string]string) string {
-	t.Helper()
-	installer(t)
-	repo := t.TempDir()
-	if err := os.CopyFS(repo, os.DirFS(filepath.Join("..", "..", "tests", "examples", name))); err != nil {
-		t.Fatal(err)
-	}
-	commit(t, repo, files, "docs(readme): add readme")
-	return repo
-}
-
-// commit writes files into repo and commits everything with message.
-func commit(t *testing.T, repo string, files map[string]string, message string) {
-	t.Helper()
-	write(t, repo, files)
-	git(t, repo, "init", "-q")
-	git(t, repo, "add", "-A")
-	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", message)
-}
-
-// write puts each file into repo, creating folders as needed. An empty body
-// deletes the file.
-func write(t *testing.T, repo string, files map[string]string) {
-	t.Helper()
-	for name, body := range files {
-		path := filepath.Join(repo, filepath.FromSlash(name))
-		if body == "" {
-			_ = os.Remove(path)
-			continue
-		}
-		mustDo(t, os.MkdirAll(filepath.Dir(path), 0o755))
-		mustDo(t, os.WriteFile(path, []byte(body), 0o755))
-	}
-}
-
-func git(t *testing.T, repo string, args ...string) {
-	t.Helper()
-	if out, err := exec.Command("git", append([]string{"-C", repo}, args...)...).CombinedOutput(); err != nil {
-		t.Fatalf("git %v: %v\n%s", args, err, out)
-	}
-}
-
-func mustDo(t *testing.T, err error) {
-	t.Helper()
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-// fitness runs the documented one-liner, `fitness-install -- <args>`, in
-// repo with env added, and returns what it printed and its exit code. With
-// no args it runs the full suite.
-func fitness(t *testing.T, repo string, env []string, args ...string) (string, int) {
-	t.Helper()
-	return piped(t, repo, "", env, args...)
-}
-
-// piped runs the one-liner like fitness, with stdin as the text a user pipes
-// in; empty stdin means none.
-func piped(t *testing.T, repo, stdin string, env []string, args ...string) (string, int) {
-	t.Helper()
-	if len(args) == 0 {
-		args = []string{"--policy=external", "--all"}
-	}
-	return execute(t, func() *exec.Cmd {
-		cmd := exec.Command(installer(t), append([]string{"--"}, args...)...)
-		cmd.Dir, cmd.Env = repo, append(userEnv(), env...)
-		if stdin != "" {
-			cmd.Stdin = strings.NewReader(stdin)
-		}
-		return cmd
-	})
-}
-
-// execute runs the command build makes and returns its output, color codes
-// dropped, and exit code, retrying a busy binary briefly.
-func execute(t *testing.T, build func() *exec.Cmd) (string, int) {
-	t.Helper()
-	var out []byte
-	cmd := started(t, build, func(cmd *exec.Cmd) (err error) {
-		out, err = cmd.CombinedOutput()
-		return err
-	})
-	return ansi.ReplaceAllString(string(out), ""), cmd.ProcessState.ExitCode()
-}
-
-// started runs each command build makes with run until one starts, and
-// returns it. A busy binary is retried as execute says; any other start
-// error fails the test.
-func started(t *testing.T, build func() *exec.Cmd, run func(*exec.Cmd) error) *exec.Cmd {
-	t.Helper()
-	for attempt := 0; ; attempt++ {
-		cmd := build()
-		err := run(cmd)
-		if cmd.ProcessState != nil {
-			return cmd
-		}
-		if !errors.Is(err, syscall.ETXTBSY) || attempt == 40 {
-			t.Fatalf("start %s: %v", cmd.Path, err)
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
-}
+// The suite's helpers live in the acceptance package, which each language
+// package's suite shares.
+var (
+	example   = acceptance.Example
+	commit    = acceptance.Commit
+	write     = acceptance.Write
+	git       = acceptance.Git
+	mustDo    = acceptance.MustDo
+	fitness   = acceptance.Fitness
+	piped     = acceptance.Piped
+	execute   = acceptance.Execute
+	started   = acceptance.Started
+	userEnv   = acceptance.UserEnv
+	localAPI  = acceptance.LocalAPI
+	installer = acceptance.Installer
+	ansi      = acceptance.Ansi
+)
 
 // placeRunner hard-links the installed runner at dst, so no parallel test's fork
 // inherits an open write handle. Where linking fails, it writes, closes and
@@ -170,44 +62,6 @@ func placeRunner(t *testing.T, installed, dst string) {
 	_, err = f.Write(raw)
 	mustDo(t, errors.Join(err, f.Close()))
 	mustDo(t, os.Rename(tmp, dst))
-}
-
-// userEnv is this process's environment without the CI job's GITHUB_*
-// variables, which a user's own terminal lacks. It names a local API host in
-// front of GitHub's.
-func userEnv() []string {
-	var env []string
-	for _, kv := range os.Environ() {
-		if !strings.HasPrefix(kv, "GITHUB_") {
-			env = append(env, kv)
-		}
-	}
-	// A test that names its own API host appends it later, and the last wins.
-	return append(env, "GITHUB_API_URL="+localAPI())
-}
-
-// localAPI is the address of one local server that passes each request on to
-// GitHub's API. The runner's probe of GitHub's API host then reaches a local
-// one however busy the machine is, while each read still reaches GitHub.
-var localAPI = sync.OnceValue(func() string {
-	github := &url.URL{Scheme: "https", Host: "api.github.com"}
-	proxy := httputil.NewSingleHostReverseProxy(github)
-	direct := proxy.Director
-	proxy.Director = func(r *http.Request) {
-		direct(r)
-		r.Host = github.Host
-	}
-	return httptest.NewServer(proxy).URL
-})
-
-// installer returns the candidate fitness-install the environment provides.
-func installer(t *testing.T) string {
-	t.Helper()
-	path := os.Getenv("FITNESS_INSTALL")
-	if path == "" {
-		t.Skip("set FITNESS_INSTALL to the candidate fitness-install to run requirement tests")
-	}
-	return path
 }
 
 // read returns text as a person reads it, table borders dropped and wrapped

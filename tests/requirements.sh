@@ -36,10 +36,10 @@ export FITNESS_INSTALL
 FITNESS_CHECKS_DIR="$(sh tests/install-checks.sh)"
 export FITNESS_CHECKS_DIR
 if [ -z "$cover" ]; then
-  exec go -C go test ./requirements -count=1 -parallel 32 "$@"
+  exec go -C go test ./requirements ./pkg/lang/.../requirements -count=1 -parallel 32 "$@"
 fi
 rm -rf out/coverage && mkdir -p out/coverage
-GOCOVERDIR="$PWD/out/coverage" go -C go test ./requirements -count=1 -parallel 32 "$@"
+GOCOVERDIR="$PWD/out/coverage" go -C go test ./requirements ./pkg/lang/.../requirements -count=1 -parallel 32 "$@"
 go -C go tool covdata percent -i ../out/coverage
 go -C go tool covdata textfmt -i ../out/coverage -o ../out/coverage.txt
 go -C go tool cover -func ../out/coverage.txt | tail -1

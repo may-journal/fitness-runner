@@ -49,8 +49,4 @@ checks
       1. WHEN that check cannot judge
          1. THEN the run is red naming the check
          2. THEN other checks still show info
-8. Reads test groups and tables
-   1. GIVEN Developer has a check of the repo's own that reads tests
-      1. WHEN the repo holds a Vitest or Jest suite
-         1. THEN the check sees each test's `describe` groups
-         2. THEN each table is marked
+8. Removed in 2026.11.27.2030: moved to go/pkg/lang/node as 0001.2
